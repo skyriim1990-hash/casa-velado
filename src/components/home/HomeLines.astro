@@ -1,0 +1,255 @@
+---
+// R3, the lines (blueprint 3): the collection as an index, not a grid of cards. Five rows, each
+// a link to its line on /cigars: the name at heading size, one sentence about its character, the
+// strength, the wrapper, the lowest price and an arrow, with a book-line rule between rows.
+//
+// From 1024px the rows take columns 1–7 and a quiet area in columns 8–12 shows a cigar of the
+// line you are on, by pointer or by keyboard focus, with a 200ms fade (Galera at first). It has
+// no zoom. Below 1024px there is no such area: each row has a small picture of its cigar above the
+// text (5:1) and the whole row is the link. Without JavaScript the area simply shows Galera.
+// The pictures are the catalogue photographs of one cigar of each line, used by reference; the
+// rows do not copy the product card.
+import Container from '../Container.astro';
+import Label from '../Label.astro';
+import Photo from '../Photo.astro';
+import Strength from '../Strength.astro';
+import TextLink from '../TextLink.astro';
+import { microcopy } from '../../data/site.ts';
+import type { Strength as StrengthValue } from '../../data/taxonomy.ts';
+import type { ImageRef } from '../../lib/schemas.ts';
+
+export interface LineRow {
+  id: string;
+  name: string;
+  tagline: string;
+  strength: StrengthValue;
+  wrapper: string;
+  /** “From €8.00”, already worked out from the catalogue. */
+  from: string;
+  image: ImageRef;
+}
+
+interface Props {
+  rows: LineRow[];
+  /** The row whose picture shows before anything is chosen. */
+  initial: string;
+}
+
+const { rows, initial } = Astro.props;
+const c = microcopy.home.lines;
+---
+
+<section class="lines" aria-labelledby="lines-title" data-lines>
+  <Container grid>
+    <div class="head" data-reveal>
+      <Label>{c.label}</Label>
+      <h2 id="lines-title">{c.title}</h2>
+    </div>
+
+    <ul class="rows">
+      {rows.map((row) => (
+        <li>
+          <a class="row" href={`/cigars#${row.id}`} data-line={row.id}>
+            <div class="strip" aria-hidden="true">
+              <Photo image={row.image} ratio="5:1" alt="" kind="productCatalog" sizes="100vw" />
+            </div>
+            <h3 class="name">{row.name}</h3>
+            <span class="arrow" aria-hidden="true">
+              →
+            </span>
+            <p class="tagline">{row.tagline}</p>
+            <div class="facts">
+              <Strength value={row.strength} />
+              <span>{row.wrapper}</span>
+              <span class="from">{row.from}</span>
+            </div>
+          </a>
+        </li>
+      ))}
+    </ul>
+
+    <div class="preview" data-preview aria-hidden="true">
+      {rows.map((row) => (
+        <div class:list={['slide', { 'is-active': row.id === initial }]} data-slide={row.id}>
+          <Photo
+            image={row.image}
+            alt=""
+            kind="productCatalog"
+            sizes="(min-width: 1280px) 40vw, 100vw"
+          />
+        </div>
+      ))}
+    </div>
+
+    <p class="cta">
+      <TextLink href="/cigars" arrow>
+        {c.cta}
+      </TextLink>
+    </p>
+  </Container>
+</section>
+
+<style>
+  .lines {
+    padding-block: var(--space-section);
+  }
+
+  .head,
+  .rows,
+  .cta {
+    grid-column: 1 / -1;
+    min-inline-size: 0;
+  }
+
+  .head {
+    display: grid;
+    gap: var(--space-16);
+    justify-items: start;
+    margin-block-end: var(--space-32);
+  }
+
+  h2 {
+    max-inline-size: 22ch;
+  }
+
+  .rows {
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    border-top: var(--line) solid var(--rule);
+  }
+
+  li:last-child {
+    border-bottom: var(--line) solid var(--rule);
+  }
+
+  /* A row: the name and the arrow, the sentence, then the facts. The whole row is the link. */
+  .row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: var(--space-16);
+    row-gap: var(--space-8);
+    align-items: baseline;
+    padding-block: var(--space-24);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .strip {
+    grid-column: 1 / -1;
+    margin-block-end: var(--space-8);
+  }
+
+  .strip :global(.placeholder) {
+    display: none;
+  }
+
+  .name {
+    font-size: var(--fs-h3);
+    font-weight: var(--fw-regular);
+    line-height: var(--lh-h3);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+    text-decoration-color: transparent;
+    transition: text-decoration-color var(--dur-image) var(--ease-out);
+  }
+
+  .arrow {
+    display: inline-block;
+    transition: transform var(--dur-image) var(--ease-out);
+  }
+
+  .tagline {
+    grid-column: 1 / -1;
+    font-family: var(--font-serif);
+    font-size: var(--fs-h4);
+    line-height: var(--lh-h4);
+    color: var(--text-2);
+  }
+
+  .facts {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4) var(--space-24);
+    margin-block-start: var(--space-4);
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .from {
+    color: var(--text);
+  }
+
+  .preview {
+    display: none;
+  }
+
+  .cta {
+    margin-block-start: var(--space-24);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .row:hover .name {
+      text-decoration-color: currentColor;
+    }
+
+    .row:hover .arrow {
+      transform: translateX(4px);
+    }
+  }
+
+  /* From 1024px: the rows in columns 1–7, the area for the picture in 8–12. */
+  @media (min-width: 64rem) {
+    .head,
+    .rows,
+    .cta {
+      grid-column: 1 / span 7;
+    }
+
+    .strip {
+      display: none;
+    }
+
+    .preview {
+      display: grid;
+      grid-column: 8 / -1;
+      grid-row: 1 / span 3;
+      align-self: start;
+      position: sticky;
+      inset-block-start: calc(var(--header-offset) + var(--space-24));
+      margin-inline-start: var(--gutter);
+    }
+
+    .slide {
+      grid-area: 1 / 1;
+      opacity: 0;
+      transition: opacity var(--dur-image) var(--ease-out);
+    }
+
+    .slide.is-active {
+      opacity: 1;
+    }
+
+    .row {
+      padding-block: var(--space-32);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .slide,
+    .name,
+    .arrow {
+      transition-duration: var(--dur-reduced);
+    }
+
+    .row:hover .arrow {
+      transform: none;
+    }
+  }
+</style>

@@ -1,0 +1,169 @@
+---
+// “Same line, other sizes” (blueprint 4.6): the other formats of the line, one under another, each
+// drawn at its true length against the longest cigar in the house (7½ inches, the La Vela
+// Lancero), so the sizes can be compared by eye and across pages. Until the final photographs
+// exist (Stage 14), the block that stands for a cigar is a plain --surface-2 rectangle of the
+// cigar's length and ring: a drawing to scale, not a picture, and with no text in it.
+//
+// Each row is one link to that cigar's page, like the product card, and has the same hover
+// (the title is underlined; the arrow moves 4px) for fine pointers only. It is not a carousel
+// and it does not copy the product card: the card is the collection's, this is the page's.
+import Badge from '../Badge.astro';
+import Strength from '../Strength.astro';
+import { microcopy } from '../../data/site.ts';
+import { fill, formatCardData, formatPrice, fromPriceCents } from '../../lib/format.ts';
+import type { Strength as StrengthValue } from '../../data/taxonomy.ts';
+import type { CigarProduct } from '../../lib/schemas.ts';
+
+interface Props {
+  products: CigarProduct[];
+  strength: StrengthValue;
+  /** The length in mm that fills the whole width: the longest cigar of the catalogue. */
+  scaleMm: number;
+}
+
+const { products, strength, scaleMm } = Astro.props;
+const MM_PER_64TH_INCH = 25.4 / 64;
+---
+
+<ul class="sizes">
+  {products.map((product) => {
+    const diameter = product.ring * MM_PER_64TH_INCH;
+    const badge =
+      product.availability === 'sold_out' ||
+      product.availability === 'low' ||
+      product.availability === 'limited'
+        ? product.availability
+        : undefined;
+    return (
+      <li>
+        <a class="size" href={`/cigars/${product.id}`}>
+          <div class="text">
+            <h3 class="title">{product.vitola}</h3>
+            <p class="data">{formatCardData(product)}</p>
+            <Strength value={strength} />
+            <p class="from">
+              <span>
+                {product.options.length > 1
+                  ? fill(microcopy.fromPrice, { price: formatPrice(fromPriceCents(product)) })
+                  : formatPrice(fromPriceCents(product))}
+              </span>
+              <span class="arrow" aria-hidden="true">
+                →
+              </span>
+            </p>
+            {badge && <Badge status={badge} />}
+          </div>
+          <div class="scale" aria-hidden="true">
+            <div
+              class="cigar"
+              style={`--length: ${product.lengthMm}; --diameter: ${diameter.toFixed(2)}; --scale: ${scaleMm};`}
+            />
+          </div>
+        </a>
+      </li>
+    );
+  })}
+</ul>
+
+<style>
+  .sizes {
+    display: grid;
+    padding: 0;
+    list-style: none;
+  }
+
+  .size {
+    display: grid;
+    gap: var(--space-16);
+    padding-block: var(--space-24);
+    border-top: var(--line) solid var(--rule);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  li:last-child .size {
+    border-bottom: var(--line) solid var(--rule);
+  }
+
+  /* A cigar that is the length of the line it is in is the full width; the rest are shorter. */
+  .scale {
+    order: -1;
+    display: block;
+  }
+
+  .cigar {
+    inline-size: calc(var(--length) / var(--scale) * 100%);
+    aspect-ratio: calc(var(--length) / var(--diameter));
+    background: var(--surface-2);
+  }
+
+  .text {
+    display: grid;
+    gap: var(--space-8);
+    justify-items: start;
+  }
+
+  .title {
+    font-size: var(--fs-card);
+    font-weight: var(--fw-medium);
+    line-height: var(--lh-h3);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+    text-decoration-color: transparent;
+    transition: text-decoration-color var(--dur-image) var(--ease-out);
+  }
+
+  .data {
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .from {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-8);
+    font-size: var(--fs-button);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .arrow {
+    display: inline-block;
+    transition: transform var(--dur-image) var(--ease-out);
+  }
+
+  @media (min-width: 40rem) {
+    .size {
+      grid-template-columns: 16rem minmax(0, 1fr);
+      gap: var(--gutter);
+      align-items: center;
+    }
+
+    .scale {
+      order: 0;
+    }
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .size:hover .title {
+      text-decoration-color: currentColor;
+    }
+
+    .size:hover .arrow {
+      transform: translateX(4px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .title,
+    .arrow {
+      transition: none;
+    }
+
+    .size:hover .arrow {
+      transform: none;
+    }
+  }
+</style>

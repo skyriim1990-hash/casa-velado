@@ -1,0 +1,236 @@
+---
+// The harvest ledger (blueprint 2.3): the figures of every line in one table, on paper. The rows
+// are the lines with a blend, read from the line records; each line's name leads to it on
+// /cigars (and the “About this line” links on /cigars come back to the row, #ledger-<line>).
+//
+// From 640px it is a ruled table with generous rows. Below 640px it is not five narrow
+// columns: each line is a record of label and value rows, the book line of the whole site. It is
+// one table either way; its roles are written out so that a screen reader still hears a table
+// when the layout is stacked. The headings of the stacked rows come from data-label.
+import Container from '../Container.astro';
+import { microcopy } from '../../data/site.ts';
+import type { HarvestRow } from '../../lib/catalogue.ts';
+
+interface Props {
+  rows: HarvestRow[];
+}
+
+const { rows } = Astro.props;
+const c = microcopy.tobacco.ledger;
+const columns = [
+  { key: 'harvest', label: c.harvest },
+  { key: 'fermentation', label: c.fermentation },
+  { key: 'leafAgeing', label: c.leafAgeing },
+  { key: 'cigarAgeing', label: c.cigarAgeing },
+] as const;
+---
+
+<section class="ledger" id="harvest-ledger" data-surface="paper" aria-labelledby="ledger-title">
+  <Container>
+    <h2 id="ledger-title">{c.title}</h2>
+
+    <table class="table" role="table">
+      <thead role="rowgroup">
+        <tr role="row">
+          <th role="columnheader" scope="col">
+            {c.line}
+          </th>
+          {columns.map((col) => (
+            <th role="columnheader" scope="col">
+              {col.label}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody role="rowgroup">
+        {rows.map((row) => (
+          <tr role="row" id={`ledger-${row.id}`}>
+            <th role="rowheader" scope="row">
+              <a href={`/cigars#${row.id}`}>
+                {row.name}
+                <span class="arrow" aria-hidden="true">
+                  →
+                </span>
+              </a>
+            </th>
+            {columns.map((col) => (
+              <td role="cell" data-label={col.label}>
+                {row[col.key]}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </Container>
+</section>
+
+<style>
+  .ledger {
+    padding-block: var(--space-section);
+  }
+
+  h2 {
+    font-size: var(--fs-h2);
+    line-height: var(--lh-h2);
+    margin-block-end: var(--space-32);
+  }
+
+  .table {
+    inline-size: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Stacked, under 640px: each line is a record; its head is the name, then label and value rows. */
+  thead {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  tbody,
+  tr,
+  th,
+  td {
+    display: block;
+  }
+
+  tr {
+    padding-block: var(--space-16);
+    border-top: var(--line) solid var(--rule);
+    scroll-margin-block-start: calc(var(--header-h) + var(--space-16));
+  }
+
+  tr:last-child {
+    border-bottom: var(--line) solid var(--rule);
+  }
+
+  tbody th {
+    text-align: start;
+    font-weight: var(--fw-regular);
+  }
+
+  tbody th a {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-8);
+    min-block-size: var(--target);
+    font-family: var(--font-serif);
+    font-size: var(--fs-h3);
+    line-height: var(--lh-h3);
+  }
+
+  td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-16);
+    min-block-size: 2.75rem;
+    padding-block: var(--space-12);
+    border-top: var(--line) solid var(--rule);
+    font-size: var(--fs-button);
+  }
+
+  /* The label is drawn from data-label; its alternative text is empty, so it is not heard twice. */
+  td::before {
+    content: attr(data-label) / '';
+    font-size: var(--fs-small);
+    color: var(--text-3);
+  }
+
+  @media (min-width: 40rem) {
+    thead {
+      position: static;
+      inline-size: auto;
+      block-size: auto;
+      clip-path: none;
+      overflow: visible;
+    }
+
+    .table {
+      display: table;
+    }
+
+    thead {
+      display: table-header-group;
+    }
+
+    tbody {
+      display: table-row-group;
+    }
+
+    tr {
+      display: table-row;
+      padding: 0;
+      border-top: 0;
+    }
+
+    th,
+    td {
+      display: table-cell;
+    }
+
+    thead th {
+      padding: 0 var(--space-16) var(--space-12) 0;
+      border-bottom: var(--line) solid var(--ink);
+      text-align: start;
+      font-family: var(--font-sans);
+      font-size: var(--fs-small);
+      font-weight: var(--fw-medium);
+      color: var(--text-3);
+    }
+
+    tbody tr {
+      border-bottom: var(--line) solid var(--rule);
+    }
+
+    tbody th,
+    td {
+      padding: var(--space-24) var(--space-16) var(--space-24) 0;
+      vertical-align: baseline;
+      border-top: 0;
+      font-size: var(--fs-ui);
+    }
+
+    tbody th a {
+      font-size: var(--fs-h4);
+      line-height: var(--lh-h4);
+    }
+
+    td::before {
+      content: none;
+    }
+  }
+
+  tbody th a {
+    text-decoration-color: transparent;
+  }
+
+  .arrow {
+    display: inline-block;
+    transition: transform var(--dur-image) var(--ease-out);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    tbody th a:hover {
+      text-decoration-color: currentColor;
+    }
+
+    tbody th a:hover .arrow {
+      transform: translateX(4px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .arrow {
+      transition: none;
+    }
+
+    tbody th a:hover .arrow {
+      transform: none;
+    }
+  }
+</style>

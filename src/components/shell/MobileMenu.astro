@@ -1,0 +1,177 @@
+---
+// The full-screen menu below 1024px (blueprint 5.4, 7.3, 8). A native <dialog> opened with
+// showModal(): the page behind it is inert, focus is held inside, Escape closes it, and focus
+// goes back to the Menu button (scripts/shell.ts). The five pages in Garamond at 36px, the
+// secondary links in Plex at the bottom. Contact, Shipping and Instagram [LINK] are from the
+// blueprint; Instagram stays a placeholder until the owner gives a link.
+import { microcopy, nav } from '../../data/site.ts';
+
+const path = Astro.url.pathname.replace(/\.html$/, '').replace(/\/$/, '') || '/';
+const isActive = (href: string) => path === href || path.startsWith(`${href}/`);
+---
+
+<dialog id="site-menu" class="menu" data-dialog="menu" aria-label={microcopy.menu}>
+  <div class="sheet">
+    <div class="top">
+      <button class="close" type="button" data-dialog-close>
+        {microcopy.close}
+      </button>
+    </div>
+
+    <nav aria-label={microcopy.menu}>
+      <ul class="pages">
+        {nav.primary.map((item, i) => (
+          <li style={`--i: ${i}`}>
+            <a href={item.href} aria-current={isActive(item.href) ? 'page' : undefined}>
+              {item.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+      <ul class="secondary">
+        {nav.secondary.map((item, i) => (
+          <li style={`--i: ${nav.primary.length + i}`}>
+            {item.href ? (
+              <a href={item.href}>{item.label}</a>
+            ) : (
+              <span>
+                {item.label} {item.placeholder}
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </nav>
+  </div>
+</dialog>
+
+<style>
+  .menu {
+    inline-size: 100%;
+    block-size: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .sheet {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    min-block-size: 100%;
+    padding-inline: var(--margin);
+  }
+
+  /* The same 72px as the header, with Close where the Menu button was. */
+  .top {
+    display: flex;
+    flex: none;
+    justify-content: flex-end;
+    align-items: center;
+    block-size: var(--header-h);
+    margin-inline-end: calc(-1 * var(--space-12));
+  }
+
+  .close {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--target);
+    padding-inline: var(--space-12);
+    font-size: var(--fs-ui);
+    line-height: 1;
+  }
+
+  nav {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--space-48);
+    padding-block: var(--space-24) var(--space-48);
+  }
+
+  ul {
+    list-style: none;
+  }
+
+  .pages a {
+    display: flex;
+    align-items: center;
+    min-block-size: 4rem;
+    font-family: var(--font-serif);
+    font-size: var(--fs-menu);
+    line-height: var(--lh-h1);
+    text-decoration: none;
+  }
+
+  .pages a[aria-current='page'] {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 8px;
+    text-decoration-color: var(--gold);
+  }
+
+  /* A phone on its side has little height: the links tighten and the sheet scrolls. */
+  @media (max-height: 30rem) {
+    .pages a {
+      min-block-size: var(--target);
+    }
+  }
+
+  .secondary {
+    display: grid;
+    gap: var(--space-4);
+    font-size: var(--fs-ui);
+  }
+
+  .secondary a,
+  .secondary span {
+    display: flex;
+    align-items: center;
+    min-block-size: var(--target);
+  }
+
+  .secondary span {
+    color: var(--text-2);
+  }
+
+  /* The sheet appears in 250ms; the links follow in a 40ms step, 8px up (blueprint 8). */
+  .menu[open] {
+    animation: sheet-in var(--dur-base) var(--ease-out);
+  }
+
+  .menu[open] li {
+    animation: link-in var(--dur-base) var(--ease-out) both;
+    animation-delay: calc(var(--i) * 40ms);
+  }
+
+  @keyframes sheet-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes link-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+
+  /* Reduced motion: no step, no movement, a 100ms fade (blueprint 8). */
+  @media (prefers-reduced-motion: reduce) {
+    .menu[open] {
+      animation-duration: var(--dur-reduced);
+    }
+
+    .menu[open] li {
+      animation: none;
+    }
+  }
+
+  /* The menu button does not exist from 1024px, and neither does the menu. */
+  @media (min-width: 64rem) {
+    .menu {
+      display: none !important;
+    }
+  }
+</style>

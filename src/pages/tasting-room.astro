@@ -1,0 +1,419 @@
+---
+// The Tasting Room (blueprint 2.3, 3 R7): the house has a physical place, and a visitor can ask for a
+// table. The photograph, a short introduction, three points, the address and hours, a static map
+// and the reservation form. The city, the address and the hours are placeholders until the owner
+// gives them; the photograph and the map are the [PHOTO: …] stand-ins (Stage 14 replaces them).
+//
+// The page is static HTML. The form is a demonstration: src/scripts/forms.ts checks it and shows
+// the confirmation; nothing is sent. Without the script the page reads whole and the button waits.
+import Base from '../layouts/Base.astro';
+import BookLine from '../components/BookLine.astro';
+import Button from '../components/Button.astro';
+import Container from '../components/Container.astro';
+import Field from '../components/Field.astro';
+import Label from '../components/Label.astro';
+import Photo from '../components/Photo.astro';
+import { identity, microcopy } from '../data/site.ts';
+import { getPhoto } from '../lib/catalogue.ts';
+import { fill } from '../lib/format.ts';
+
+const c = microcopy.tastingRoom;
+const f = microcopy.forms;
+const e = f.errors;
+
+const [room, map] = await Promise.all([getPhoto('tasting-room'), getPhoto('tasting-map')]);
+const guests = [1, 2, 3, 4, 5, 6].map((n) => ({ value: String(n), label: String(n) }));
+const summary = {
+  'data-summary-text': f.summary,
+  'data-summary-one-text': f.summaryOne,
+  'data-sending': f.sending,
+  'data-confirmation': identity.demo.reservation,
+};
+---
+
+<Base title={c.title} description={c.description}>
+  <header class="top">
+    <Container grid>
+      <div class="label">
+        <Label>{fill(c.label, { city: c.city })}</Label>
+      </div>
+      <h1>{c.title}</h1>
+      <p class="lead">{c.lead}</p>
+      <div class="cta">
+        <Button href="#reserve">{c.reserve}</Button>
+      </div>
+    </Container>
+  </header>
+
+  <div class="room">
+    <Container>
+      <Photo
+        image={room.image}
+        kind="editorial"
+        sizes="100vw"
+        priority
+        alt={room.image.kind === 'placeholder' ? room.image.description : ''}
+      />
+    </Container>
+  </div>
+
+  <section class="about" aria-label={c.title}>
+    <Container grid>
+      <p class="intro">{fill(c.intro, { city: c.city })}</p>
+      <ol class="points">
+        {c.points.map((point) => (
+          <li>
+            <h2>{point}</h2>
+          </li>
+        ))}
+      </ol>
+    </Container>
+  </section>
+
+  <section class="practical" aria-labelledby="practical-title">
+    <Container grid>
+      <div class="where">
+        <h2 id="practical-title">{c.practical}</h2>
+        <BookLine
+          rows={[
+            { label: c.address, value: c.addressValue },
+            { label: c.hours, value: c.hoursValue },
+          ]}
+        />
+      </div>
+      <figure class="map">
+        <Photo
+          image={map.image}
+          kind="editorial"
+          sizes="(min-width: 1024px) 50vw, 100vw"
+          alt={map.image.kind === 'placeholder' ? map.image.description : map.image.alt}
+        />
+      </figure>
+    </Container>
+  </section>
+
+  <section class="reserve" id="reserve" aria-labelledby="reserve-title">
+    <Container grid>
+      <div class="intro-form">
+        <h2 id="reserve-title">{c.reserve}</h2>
+        <p class="demo">{c.reserveLead}</p>
+      </div>
+
+      <div class="form-wrap">
+        <form id="reserve-form" data-demo-form novalidate {...summary}>
+          <p class="summary" role="alert" data-form-summary></p>
+
+          <div class="row">
+            <Field
+              id="r-date"
+              name="date"
+              type="date"
+              label={f.fields.date}
+              data-msg-empty={e.date}
+              data-msg-invalid={e.date}
+              data-msg-past={e.datePast}
+            />
+            <Field
+              id="r-time"
+              name="time"
+              type="time"
+              label={f.fields.time}
+              data-msg-empty={e.time}
+              data-msg-invalid={e.time}
+            />
+          </div>
+          <Field
+            id="r-guests"
+            name="guests"
+            type="select"
+            label={f.fields.guests}
+            options={guests}
+            placeholder={f.choose}
+            data-guests
+            data-msg-empty={e.guests}
+            data-msg-invalid={e.guests}
+          />
+          <Field
+            id="r-name"
+            name="name"
+            label={f.fields.name}
+            autocomplete="name"
+            data-msg-empty={e.name}
+          />
+          <Field
+            id="r-email"
+            name="email"
+            type="email"
+            label={f.fields.email}
+            autocomplete="email"
+            data-msg-empty={e.email}
+            data-msg-invalid={e.emailIncomplete}
+          />
+          <Field
+            id="r-phone"
+            name="phone"
+            type="tel"
+            label={f.fields.phone}
+            autocomplete="tel"
+            data-msg-empty={e.phone}
+          />
+          <Field id="r-note" name="note" type="textarea" label={f.fields.note} optional />
+
+          <Button type="submit" data-form-submit disabled>
+            {c.reserve}
+          </Button>
+          <noscript>
+            <p class="note">{f.noscript}</p>
+          </noscript>
+        </form>
+
+        <div class="done" data-form-done="reserve-form" role="status" tabindex="-1" hidden>
+          <p data-form-done-text></p>
+        </div>
+      </div>
+    </Container>
+  </section>
+</Base>
+
+<script>
+  import '../scripts/forms.ts';
+</script>
+
+<style>
+  /* The opening is words: the label, the title, one sentence and the way to the form. */
+  .top {
+    padding-block: var(--space-48) var(--space-32);
+  }
+
+  .label,
+  h1,
+  .lead,
+  .cta {
+    grid-column: 1 / -1;
+    min-inline-size: 0;
+  }
+
+  .top :global(.container) {
+    row-gap: var(--space-16);
+  }
+
+  .lead {
+    max-inline-size: 28ch;
+    font-family: var(--font-serif);
+    font-size: var(--fs-lead);
+    line-height: var(--lh-lead);
+    color: var(--text-2);
+  }
+
+  .cta {
+    margin-block-start: var(--space-8);
+  }
+
+  @media (min-width: 64rem) {
+    .top {
+      padding-block: var(--space-96) var(--space-48);
+    }
+
+    h1 {
+      grid-column: 1 / span 6;
+    }
+
+    .lead {
+      grid-column: 8 / -1;
+      align-self: end;
+    }
+
+    .cta {
+      grid-column: 8 / -1;
+    }
+  }
+
+  /* The photograph: its three crops (16:9, 4:3, 4:5); on a large screen no taller than the window. */
+  .room :global(.photo) {
+    max-block-size: 80svh;
+  }
+
+  .about {
+    padding-block: var(--space-section);
+  }
+
+  .intro,
+  .points {
+    grid-column: 1 / -1;
+    min-inline-size: 0;
+  }
+
+  .intro {
+    max-inline-size: 38rem;
+    font-family: var(--font-serif);
+    font-size: var(--fs-lead);
+    line-height: var(--lh-lead);
+  }
+
+  .points {
+    margin-block-start: var(--space-32);
+    padding: 0;
+    list-style: none;
+  }
+
+  .points li {
+    padding-block: var(--space-16);
+    border-top: var(--line) solid var(--rule);
+  }
+
+  .points li:last-child {
+    border-bottom: var(--line) solid var(--rule);
+  }
+
+  .points h2 {
+    font-size: var(--fs-h4);
+    line-height: var(--lh-h4);
+  }
+
+  @media (min-width: 64rem) {
+    .intro {
+      grid-column: 1 / span 6;
+    }
+
+    .points {
+      grid-column: 8 / -1;
+      margin-block-start: 0;
+    }
+  }
+
+  .practical {
+    padding-block-end: var(--space-section);
+  }
+
+  .where,
+  .map {
+    grid-column: 1 / -1;
+    min-inline-size: 0;
+  }
+
+  .where {
+    display: grid;
+    gap: var(--space-16);
+    align-content: start;
+  }
+
+  .where h2 {
+    font-size: var(--fs-h3);
+    line-height: var(--lh-h3);
+  }
+
+  .map {
+    margin: var(--space-32) 0 0;
+  }
+
+  @media (min-width: 40rem) {
+    .where {
+      grid-column: 1 / span 4;
+    }
+
+    .map {
+      grid-column: 5 / -1;
+      margin-block-start: 0;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .where {
+      grid-column: 1 / span 5;
+    }
+
+    .map {
+      grid-column: 7 / -1;
+    }
+  }
+
+  /* The form. */
+  .reserve {
+    padding-block: var(--space-48) var(--space-section);
+    border-top: var(--line) solid var(--rule);
+  }
+
+  .intro-form,
+  .form-wrap {
+    grid-column: 1 / -1;
+    min-inline-size: 0;
+  }
+
+  .intro-form {
+    display: grid;
+    gap: var(--space-12);
+    align-content: start;
+    margin-block-end: var(--space-32);
+  }
+
+  .intro-form h2 {
+    font-size: var(--fs-h2);
+    line-height: var(--lh-h2);
+  }
+
+  .demo,
+  .note {
+    max-inline-size: 32ch;
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--text-2);
+  }
+
+  form {
+    display: grid;
+    gap: var(--space-24);
+    max-inline-size: 32rem;
+  }
+
+  .row {
+    display: grid;
+    gap: var(--space-24);
+  }
+
+  .summary {
+    font-size: var(--fs-ui);
+    color: var(--error);
+  }
+
+  .summary:empty {
+    display: none;
+  }
+
+  .done {
+    max-inline-size: 32rem;
+    padding: var(--space-24);
+    border: var(--line) solid var(--border);
+    font-family: var(--font-serif);
+    font-size: var(--fs-h4);
+    line-height: var(--lh-h4);
+  }
+
+  .done[hidden] {
+    display: none;
+  }
+
+  @media (min-width: 40rem) {
+    .row {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .intro-form {
+      grid-column: 1 / span 3;
+      margin-block-end: 0;
+    }
+
+    .form-wrap {
+      grid-column: 4 / -1;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .intro-form {
+      grid-column: 1 / span 4;
+    }
+
+    .form-wrap {
+      grid-column: 6 / span 6;
+    }
+  }
+</style>

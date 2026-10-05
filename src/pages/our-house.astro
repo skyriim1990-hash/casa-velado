@@ -1,0 +1,202 @@
+---
+// Our House (blueprint 1.8, 2.3): who the people are, whether the house is real and grounded, and
+// what it chooses not to do. A house archive, not an About page: the short story, an archive
+// photograph, the long history in five chapters, the places, the three rings, what we don’t do
+// and the signature. Every fact is read from the house record, the lines and the regions.
+//
+// The page is static HTML with no script of its own: nothing waits for JavaScript.
+import Base from '../layouts/Base.astro';
+import Button from '../components/Button.astro';
+import Container from '../components/Container.astro';
+import Photo from '../components/Photo.astro';
+import TextLink from '../components/TextLink.astro';
+import BandEvolution from '../components/house/BandEvolution.astro';
+import HouseHistory from '../components/house/HouseHistory.astro';
+import HouseMap from '../components/house/HouseMap.astro';
+import WhatWeDontDo from '../components/house/WhatWeDontDo.astro';
+import { identity, microcopy } from '../data/site.ts';
+import {
+  getHouse,
+  getLedgerRange,
+  getLines,
+  getPhoto,
+  getRegions,
+  isBlended,
+} from '../lib/catalogue.ts';
+
+const c = microcopy.ourHouse;
+const f = c.facts;
+
+const [house, lines, regions, harvests] = await Promise.all([
+  getHouse(),
+  getLines(),
+  getRegions(),
+  getLedgerRange('harvestYear'),
+]);
+const archive = await getPhoto(house.archivePhoto);
+
+// The short story of the site (blueprint 1.7); its last sentence is the signature, which this
+// page sets once, at the end.
+const story = identity.shortStory.endsWith(identity.signature)
+  ? identity.shortStory.slice(0, -identity.signature.length).trim()
+  : identity.shortStory;
+
+// Facts that are figures in the records, for two of the chapters.
+const blended = lines.filter(isBlended);
+const permanent = blended.filter((l) => l.kind === 'permanent').length;
+const editions = blended.filter((l) => l.kind === 'edition').length;
+const rolling = [...new Set(blended.map((l) => l.rollingMethod))].join(', ');
+const words = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six'];
+const facts: Record<string, { label: string; value: string }[]> = {
+  'the-beginning': [{ label: f.founded, value: String(identity.established) }],
+  today: [
+    { label: f.permanentLines, value: words[permanent] ?? String(permanent) },
+    { label: f.edition, value: editions === 1 ? f.editionValue : String(editions) },
+    {
+      label: f.harvests,
+      value:
+        harvests.min === harvests.max ? String(harvests.min) : `${harvests.min}–${harvests.max}`,
+    },
+    { label: f.rolling, value: rolling },
+  ],
+};
+
+const chapters = house.chapters.map((chapter) => ({
+  id: chapter.id,
+  title: chapter.title,
+  paragraphs: chapter.paragraphs,
+  facts: facts[chapter.id],
+}));
+
+// The places: the regions the house names, with the lines whose blend has leaf from each.
+const leafRegions = (line: (typeof blended)[number]) =>
+  new Set(
+    [line.wrapper, line.binder, ...line.filler].flatMap((leaf) =>
+      leaf.regions.map((r) => r.region),
+    ),
+  );
+const places = house.places.flatMap((id) => {
+  const region = regions.find((r) => r.id === id);
+  if (!region) return [];
+  return [
+    {
+      id,
+      name: region.name,
+      group: region.mapGroup,
+      lines: blended.filter((line) => leafRegions(line).has(id)).map((line) => line.name),
+    },
+  ];
+});
+---
+
+<Base title={c.title} description={c.description}>
+  <header class="intro">
+    <Container grid>
+      <h1>{c.title}</h1>
+      <p class="story">{story}</p>
+    </Container>
+  </header>
+
+  <div class="archive">
+    <Container>
+      <Photo image={archive.image} ratio="3:2" kind="editorial" sizes="100vw" priority />
+    </Container>
+  </div>
+
+  <HouseHistory {chapters} />
+  <HouseMap {places} />
+  <BandEvolution rings={house.rings} />
+  <WhatWeDontDo items={house.wontDo} />
+
+  <section class="closing" aria-label={identity.signature}>
+    <Container grid>
+      <p class="signature">{identity.signature}</p>
+      <div class="ctas">
+        <Button href="/tobacco">
+          {c.closing.primary}
+          <span aria-hidden="true">&nbsp;→</span>
+        </Button>
+        <TextLink href="/cigars" arrow>
+          {c.closing.secondary}
+        </TextLink>
+      </div>
+    </Container>
+  </section>
+</Base>
+
+<style>
+  /* The opening is text: the title and the short story, with no picture behind them. */
+  .intro {
+    padding-block: var(--space-48) var(--space-32);
+  }
+
+  h1,
+  .story {
+    grid-column: 1 / -1;
+    min-inline-size: 0;
+  }
+
+  .story {
+    margin-block-start: var(--space-24);
+    max-inline-size: 36ch;
+    font-family: var(--font-serif);
+    font-size: var(--fs-lead);
+    line-height: var(--lh-lead);
+  }
+
+  @media (min-width: 40rem) {
+    .intro {
+      padding-block: var(--space-64) var(--space-48);
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .intro {
+      padding-block: var(--space-96) var(--space-64);
+    }
+
+    h1 {
+      grid-column: 1 / span 5;
+    }
+
+    .story {
+      grid-column: 7 / -1;
+      margin-block-start: 0;
+      align-self: end;
+    }
+  }
+
+  /* The archive photograph: 3:2 across the content width; on a large screen no taller than the window. */
+  .archive :global(.photo) {
+    max-block-size: 80svh;
+  }
+
+  .closing {
+    padding-block: var(--space-section);
+  }
+
+  .signature {
+    grid-column: 1 / -1;
+    font-family: var(--font-serif);
+    font-size: var(--fs-h3);
+    font-style: italic;
+    line-height: var(--lh-h3);
+  }
+
+  .ctas {
+    grid-column: 1 / -1;
+    display: grid;
+    gap: var(--space-8);
+    justify-items: start;
+    margin-block-start: var(--space-32);
+  }
+
+  @media (min-width: 40rem) {
+    .ctas {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-8) var(--space-32);
+    }
+  }
+</style>

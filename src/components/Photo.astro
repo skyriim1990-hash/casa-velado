@@ -1,0 +1,242 @@
+---
+// The one component that shows a photograph (blueprint 6, 6.7–6.9). A fixed aspect ratio
+// (`aspect-ratio`, plus width and height on the <img>), a plain --surface-2 ground while it
+// loads, square corners, no frame, no shadow, no filter, no overlay, no blur. Colour is
+// corrected in the file, never in CSS.
+//
+// Two kinds of image record (src/lib/schemas.ts):
+//   placeholder  a block of the right ratio with “[PHOTO: description]”. Until approved
+//                photographs exist, this is every image on the site (blueprint 6.7).
+//   asset        a photograph under src/assets/images, converted by the build to WebP at the
+//                widths of its kind (src/lib/images.ts), with srcset and sizes, and never at a
+//                width larger than the source can give that crop.
+//
+// Crops (blueprint 6.9). `ratio` picks one crop. Without it, a frame that lists three crops
+// uses them by width: the first at 1024px and up, the second at 640–1023px, the third below
+// 640px, as <picture> sources for an asset and as the box's ratio for a placeholder. A frame
+// with one or two crops uses its first. The focus point is the `object-position` for ratios
+// between the prepared crops. An asset may give a separate file for a crop (`crops`); that crop
+// is then drawn from its own file instead of being cut from `src`.
+//
+// `alt`: by default the frame's description; `alt=""` says the picture is decorative or is
+// already named by the text next to it (a card). Hero images pass `priority`.
+import { getImage } from 'astro:assets';
+import { imageKinds, type ImageKindName } from '../lib/images.ts';
+import type { ImageRef, Ratio } from '../lib/schemas.ts';
+
+interface Props {
+  image: ImageRef;
+  ratio?: Ratio;
+  alt?: string;
+  kind?: ImageKindName;
+  /** The `sizes` attribute of an asset: how wide it is drawn at each width. */
+  sizes?: string;
+  /** Load now and first (the hero), instead of lazily. */
+  priority?: boolean;
+  class?: string;
+}
+
+const {
+  image,
+  ratio,
+  alt,
+  kind = 'editorial',
+  sizes = '100vw',
+  priority = false,
+  class: className,
+} = Astro.props;
+
+const css = (r: Ratio) => r.replace(':', ' / ');
+const dims = (r: Ratio) => r.split(':').map(Number) as [number, number];
+
+// Which crops, and at which widths they apply.
+const responsive = !ratio && image.ratios.length === 3;
+const first = ratio ?? image.ratios[0] ?? '3:2';
+const crops: { media?: string; ratio: Ratio }[] = responsive
+  ? [
+      { media: '(min-width: 1024px)', ratio: image.ratios[0] ?? first },
+      { media: '(min-width: 640px)', ratio: image.ratios[1] ?? first },
+      { ratio: image.ratios[2] ?? first },
+    ]
+  : [{ ratio: first }];
+
+const ratioVars = responsive
+  ? `--r-wide: ${css(crops[0]!.ratio)}; --r-mid: ${css(crops[1]!.ratio)}; --r-tall: ${css(crops[2]!.ratio)};`
+  : `--r: ${css(first)};`;
+const style = `${ratioVars}${image.focus ? ` --focus: ${image.focus};` : ''}`;
+
+// The text a screen reader gets.
+const description = image.kind === 'placeholder' ? image.description : image.alt;
+const altText = alt ?? description.charAt(0).toUpperCase() + description.slice(1);
+const decorative = altText === '';
+
+// An asset: look the file up, then make a WebP at each width for each crop.
+type Built = {
+  media?: string | undefined;
+  srcset: string;
+  src: string;
+  width: number;
+  height: number;
+};
+let built: Built[] = [];
+if (image.kind === 'asset') {
+  const files = import.meta.glob<{ default: ImageMetadata }>(
+    '../assets/images/**/*.{jpg,jpeg,png,tif,tiff,webp}',
+  );
+  const sourceOf = async (src: string) => {
+    const key = Object.keys(files).find((k) => k.startsWith(`../assets/images/${src}.`));
+    const load = key ? files[key] : undefined;
+    if (!load) throw new Error(`Photo: no file for “${src}” in src/assets/images`);
+    return (await load()).default;
+  };
+  // A crop with its own file (blueprint 6.9: separate crops) is drawn from it; the rest from `src`.
+  const fileFor = (r: Ratio) => image.crops?.find((c) => c.ratio === r)?.src ?? image.src;
+  const { widths, quality } = imageKinds[kind];
+  const gravity = (focus?: string) => {
+    const [x = 50, y = 50] = (focus ?? '50% 50%').split(' ').map((n) => parseInt(n, 10));
+    const h = x < 34 ? 'left' : x > 66 ? 'right' : '';
+    const v = y < 34 ? 'top' : y > 66 ? 'bottom' : '';
+    // sharp wants the horizontal word first: "left top".
+    return `${h} ${v}`.trim() || 'center';
+  };
+  built = await Promise.all(
+    crops.map(async (crop) => {
+      const source = await sourceOf(fileFor(crop.ratio));
+      const [rw, rh] = dims(crop.ratio);
+      // Never enlarge: a tall crop of a wide photograph has less width to give than the
+      // photograph itself. When the most it can give falls between two widths of its kind,
+      // that width is made too, so the crop keeps all the detail the source has.
+      const most = Math.min(source.width, Math.floor((source.height * rw) / rh));
+      const usable: number[] = widths.filter((w) => w <= most);
+      const last = usable[usable.length - 1];
+      if (last !== undefined && last < most && widths.some((w) => w > most)) usable.push(most);
+      const list = usable.length > 0 ? usable : [Math.min(...widths)];
+      const files = await Promise.all(
+        list.map((w) =>
+          getImage({
+            src: source,
+            width: w,
+            height: Math.round((w * rh) / rw),
+            format: 'webp',
+            quality,
+            fit: 'cover',
+            position: gravity(image.focus),
+          }),
+        ),
+      );
+      const largest = files[files.length - 1]!;
+      return {
+        media: crop.media,
+        srcset: files.map((f, i) => `${f.src} ${list[i]}w`).join(', '),
+        src: largest.src,
+        width: Number(largest.attributes.width),
+        height: Number(largest.attributes.height),
+      };
+    }),
+  );
+}
+const base = built[built.length - 1];
+---
+
+<div
+  class:list={['photo', className]}
+  data-surface="dark"
+  style={style}
+  role={image.kind === 'placeholder' && !decorative ? 'img' : undefined}
+  aria-label={image.kind === 'placeholder' && !decorative ? altText : undefined}
+  aria-hidden={image.kind === 'placeholder' && decorative ? 'true' : undefined}
+>
+  {image.kind === 'placeholder' ? (
+    <span class="placeholder" aria-hidden="true">
+      [PHOTO: {image.description}]
+    </span>
+  ) : base ? (
+    <picture>
+      {built
+        .filter((b) => b.media)
+        .map((b) => (
+          <source media={b.media} srcset={b.srcset} {sizes} type="image/webp" />
+        ))}
+      <img
+        src={base.src}
+        srcset={base.srcset}
+        {sizes}
+        width={base.width}
+        height={base.height}
+        alt={altText}
+        loading={priority ? 'eager' : 'lazy'}
+        decoding={priority ? 'sync' : 'async'}
+        fetchpriority={priority ? 'high' : undefined}
+        data-fade={priority ? undefined : ''}
+      />
+    </picture>
+  ) : null}
+</div>
+
+<style>
+  .photo {
+    position: relative;
+    display: block;
+    inline-size: 100%;
+    overflow: hidden;
+    background: var(--surface-2);
+    border-radius: 0;
+    aspect-ratio: var(--r-tall, var(--r));
+  }
+
+  @media (min-width: 40rem) {
+    .photo {
+      aspect-ratio: var(--r-mid, var(--r));
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .photo {
+      aspect-ratio: var(--r-wide, var(--r));
+    }
+  }
+
+  picture {
+    display: block;
+    block-size: 100%;
+  }
+
+  img {
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+    object-position: var(--focus, center);
+  }
+
+  /* An image fades in over 200ms once it has loaded (blueprint 6.8); the hero does not. Without
+     JavaScript it simply shows. */
+  :global(html.js) img[data-fade] {
+    opacity: 0;
+    transition: opacity var(--dur-image) var(--ease-out);
+  }
+
+  :global(html.js) img[data-fade].is-loaded {
+    opacity: 1;
+  }
+
+  /* The placeholder: --text-2 on --surface-2 (7.1 : 1); --text-3 is not allowed there. */
+  .placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: flex-end;
+    padding: var(--space-16);
+    font-family: var(--font-sans);
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--text-2);
+    overflow-wrap: anywhere;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(html.js) img[data-fade] {
+      transition-duration: var(--dur-reduced);
+    }
+  }
+</style>

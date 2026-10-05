@@ -1,0 +1,56 @@
+/* Local WOFF2, subset to Basic Latin + Latin-1 + Latin Extended-A (blueprint 5.2, 9.2).
+   Recipe and sizes: docs/fonts.md. Families carry project names so the stack reads clearly. */
+
+@font-face {
+  font-family: 'Casa Serif';
+  src: url('../assets/fonts/casa-serif-roman.woff2') format('woff2');
+  font-weight: 400 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Casa Serif';
+  src: url('../assets/fonts/casa-serif-italic.woff2') format('woff2');
+  font-weight: 400 600;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Casa Sans';
+  src: url('../assets/fonts/casa-sans-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Casa Sans';
+  src: url('../assets/fonts/casa-sans-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Metric-matched fallbacks, so the swap does not shift the layout.
+   size-adjust = target average width / fallback average width (English letter frequency);
+   ascent/descent/line-gap = target metric / size-adjust.
+   Garamond 0.3878 vs Times New Roman 0.4091; Plex 0.4596 vs Arial 0.4513. */
+@font-face {
+  font-family: 'Casa Serif Fallback';
+  src: local('Times New Roman'), local('Times');
+  size-adjust: 94.8%;
+  ascent-override: 106.2%;
+  descent-override: 31.4%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Casa Sans Fallback';
+  src: local('Arial'), local('Helvetica');
+  size-adjust: 101.8%;
+  ascent-override: 100.7%;
+  descent-override: 27%;
+  line-gap-override: 0%;
+}

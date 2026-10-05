@@ -1,0 +1,127 @@
+---
+// One chapter of Tobacco (blueprint 2.3): the heading, 120–180
+// words, one photograph (3:2) and a small book block of two or three facts. A chapter is one of
+// five parts of a single book, not a card: no frame, no shadow, no hover.
+//
+// Below 1024px the order is the photograph, the heading, the text and the facts. From
+// 1024px two columns that alternate: the photograph in columns 1–6 and the text in 8–12, then the
+// text in 1–5 and the photograph in 7–12. Nothing is sticky and nothing moves: the home page's
+// story (R4) is not repeated here.
+import BookLine from '../BookLine.astro';
+import Container from '../Container.astro';
+import Photo from '../Photo.astro';
+import type { ImageRef } from '../../lib/schemas.ts';
+
+interface Props {
+  id: string;
+  /** The heading; may carry <i lang="es">. */
+  title: string;
+  /** Paragraphs, may carry <i lang="es">. */
+  paragraphs: string[];
+  facts: { label: string; value: string }[];
+  image: ImageRef;
+  /** Which side the photograph is on from 1024px. */
+  side: 'left' | 'right';
+}
+
+const { id, title, paragraphs, facts, image, side } = Astro.props;
+---
+
+<section class="chapter" id={id} data-side={side} aria-labelledby={`${id}-title`}>
+  <Container grid>
+    <div class="media">
+      <Photo {image} ratio="3:2" kind="editorial" sizes="(min-width: 1024px) 50vw, 100vw" />
+    </div>
+
+    <div class="text">
+      <h2 id={`${id}-title`} set:html={title} />
+      <div class="body">
+        {paragraphs.map((p) => (
+          <p set:html={p} />
+        ))}
+      </div>
+      <BookLine rows={facts} />
+    </div>
+  </Container>
+</section>
+
+<style>
+  .chapter {
+    padding-block: var(--space-48);
+    scroll-margin-block-start: var(--header-h);
+  }
+
+  .media,
+  .text {
+    grid-column: 1 / -1;
+    min-inline-size: 0;
+  }
+
+  .text {
+    display: grid;
+    gap: var(--space-16);
+    align-content: start;
+    margin-block-start: var(--space-24);
+  }
+
+  h2 {
+    font-size: var(--fs-h2);
+    line-height: var(--lh-h2);
+  }
+
+  .body {
+    display: grid;
+    gap: var(--space-16);
+    max-inline-size: var(--measure);
+    color: var(--text-2);
+  }
+
+  .text :global(.book-line) {
+    margin-block-start: var(--space-8);
+  }
+
+  @media (min-width: 40rem) {
+    .chapter {
+      padding-block: var(--space-64);
+    }
+
+    .text {
+      margin-block-start: var(--space-32);
+    }
+  }
+
+  /* From 1024px: two columns, and the sides alternate down the page. */
+  @media (min-width: 64rem) {
+    .chapter {
+      padding-block: var(--space-96);
+    }
+
+    .media {
+      grid-row: 1;
+    }
+
+    .text {
+      grid-row: 1;
+      margin-block-start: 0;
+    }
+
+    .chapter[data-side='left'] .media {
+      grid-column: 1 / span 6;
+    }
+
+    .chapter[data-side='left'] .text {
+      grid-column: 8 / -1;
+      align-self: end;
+    }
+
+    .chapter[data-side='right'] .text {
+      grid-column: 1 / span 5;
+      align-self: start;
+      padding-block-start: var(--space-48);
+    }
+
+    .chapter[data-side='right'] .media {
+      grid-column: 7 / -1;
+    }
+  }
+</style>

@@ -1,0 +1,120 @@
+/* Base typography, links, focus, motion preferences (blueprint 5.2, 5.4, 8, 9.2). */
+
+html {
+  scroll-padding-top: calc(var(--header-h) + var(--space-16));
+  color-scheme: dark;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-ui);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-ui);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Headings are 400. Hierarchy comes from size and position, never from weight 700. */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-serif);
+  font-weight: var(--fw-regular);
+  hyphens: manual;
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: var(--fs-h1);
+  line-height: var(--lh-h1);
+}
+
+h2 {
+  font-size: var(--fs-h2);
+  line-height: var(--lh-h2);
+}
+
+h3 {
+  font-size: var(--fs-h3);
+  line-height: var(--lh-h3);
+  font-weight: var(--fw-medium);
+}
+
+h4 {
+  font-size: var(--fs-h4);
+  line-height: var(--lh-h4);
+  font-weight: var(--fw-medium);
+}
+
+p {
+  text-wrap: pretty;
+}
+
+strong,
+b {
+  font-weight: var(--fw-medium);
+}
+
+/* Italic is for one word, a subtitle, a signature or a Spanish craft term. */
+em,
+i {
+  font-style: italic;
+}
+
+small {
+  font-size: var(--fs-small);
+  line-height: var(--lh-small);
+}
+
+/* The data-demo-state attributes below force a state for the specimens on /styleguide; the
+   same rule serves the real state, so a specimen cannot drift. Nothing on the site sets them. */
+
+/* Links: a 1px underline, 4px below, at 40% of the text colour; 100% on hover. */
+a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  transition: text-decoration-color var(--dur-fast) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  a:hover,
+  a[data-demo-state='hover'] {
+    text-decoration-color: currentColor;
+  }
+}
+
+/* Focus: a solid 2px line in the text colour, 3px away. Never removed without a replacement. */
+:focus-visible,
+[data-demo-state='focus'] {
+  outline: var(--focus-width) solid var(--text);
+  outline-offset: var(--focus-offset);
+}
+
+::selection {
+  background: var(--text);
+  color: var(--bg);
+}
+
+/* Pages without JavaScript or motion preferences never wait for an animation. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Native cross-document view transitions: a 200ms cross-fade, as progressive enhancement.
+   No client-side router (blueprint 8). */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: var(--dur-image);
+    animation-timing-function: var(--ease-in-out);
+  }
+}

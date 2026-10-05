@@ -1,0 +1,195 @@
+---
+// The places (blueprint 2.3): Estelí, Condega and Jalapa together, and Ometepe apart. A diagram, not
+// a map. The house has no recorded coordinates, distances, soil or climate, and the blueprint marks
+// the geography “for verification”, so nothing here is placed, measured or described as a fact of
+// the land: the three northern places are listed on one rule, Ometepe on another, and the note says
+// plainly that order and spacing show no distance. Drawn inline in SVG: no map service, no
+// frame, no library, thin lines only.
+//
+// Beside it a book block says which lines have leaf from each place, read from the line records.
+import Container from '../Container.astro';
+import BookLine from '../BookLine.astro';
+import { microcopy } from '../../data/site.ts';
+
+interface Place {
+  id: string;
+  name: string;
+  group: 'north' | 'apart';
+  /** The names of the lines with leaf from this place. */
+  lines: string[];
+}
+
+interface Props {
+  places: Place[];
+}
+
+const { places } = Astro.props;
+const c = microcopy.ourHouse.places;
+const north = places.filter((p) => p.group === 'north');
+const apart = places.filter((p) => p.group === 'apart');
+
+// The diagram: a vertical rule with its places, a gap, then a second rule with the place apart.
+const STEP = 56;
+const TOP = 44;
+const northY = (i: number) => TOP + 16 + i * STEP;
+const northEnd = northY(north.length - 1) + 24;
+const apartTop = northEnd + 56;
+const apartY = (i: number) => apartTop + 16 + i * STEP;
+const height = apartY(apart.length - 1) + 32;
+---
+
+<section class="places" aria-labelledby="places-title">
+  <Container grid>
+    <div class="head">
+      <h2 id="places-title">{c.title}</h2>
+    </div>
+
+    <figure class="figure">
+      <svg
+        class="map"
+        viewBox={`0 0 320 ${height}`}
+        role="img"
+        aria-labelledby="map-title map-desc"
+        focusable="false"
+      >
+        <title id="map-title">{microcopy.ourHouse.places.mapName}</title>
+        <desc id="map-desc">{microcopy.ourHouse.places.mapDescription}</desc>
+
+        <text class="group" x="0" y="14">
+          {c.groupNorth}
+        </text>
+        <line class="rule" x1="12" y1={TOP} x2="12" y2={northEnd} />
+        {north.map((place, i) => (
+          <>
+            <circle class="node" cx="12" cy={northY(i)} r="5" />
+            <text class="name" x="36" y={northY(i) + 6}>
+              {place.name}
+            </text>
+          </>
+        ))}
+
+        <text class="group" x="0" y={apartTop - 14}>
+          {c.groupApart}
+        </text>
+        <line class="rule" x1="12" y1={apartTop} x2="12" y2={apartY(apart.length - 1) + 24} />
+        {apart.map((place, i) => (
+          <>
+            <circle class="node" cx="12" cy={apartY(i)} r="5" />
+            <text class="name" x="36" y={apartY(i) + 6}>
+              {place.name}
+            </text>
+          </>
+        ))}
+      </svg>
+      <figcaption class="note">{c.note}</figcaption>
+    </figure>
+
+    <div class="list">
+      <p class="list-title">{c.listTitle}</p>
+      <BookLine rows={places.map((p) => ({ label: p.name, value: p.lines.join(', ') }))} />
+    </div>
+  </Container>
+</section>
+
+<style>
+  .places {
+    padding-block: var(--space-section);
+  }
+
+  .head,
+  .figure,
+  .list {
+    grid-column: 1 / -1;
+    min-inline-size: 0;
+  }
+
+  .head {
+    display: grid;
+    gap: var(--space-16);
+    justify-items: start;
+    margin-block-end: var(--space-32);
+  }
+
+  h2 {
+    font-size: var(--fs-h2);
+    line-height: var(--lh-h2);
+  }
+
+  .figure {
+    margin: 0 0 var(--space-32);
+    max-inline-size: 20rem;
+  }
+
+  /* The drawing is lines and words only: --border for the rules, --text for the names. */
+  .map {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+    overflow: visible;
+  }
+
+  .rule {
+    stroke: var(--border);
+    stroke-width: 1;
+  }
+
+  .node {
+    fill: var(--bg);
+    stroke: var(--text);
+    stroke-width: 1.5;
+  }
+
+  .name {
+    fill: var(--text);
+    font-family: var(--font-serif);
+    font-size: 22px;
+  }
+
+  .group {
+    fill: var(--text-3);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: var(--fw-medium);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .note {
+    margin-block-start: var(--space-16);
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--text-3);
+  }
+
+  .list-title {
+    margin-block-end: var(--space-8);
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--text-2);
+  }
+
+  @media (min-width: 40rem) {
+    .figure {
+      grid-column: 1 / span 4;
+      margin-block-end: 0;
+    }
+
+    .list {
+      grid-column: 5 / -1;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .head {
+      grid-column: 1 / span 6;
+    }
+
+    .figure {
+      grid-column: 1 / span 4;
+    }
+
+    .list {
+      grid-column: 7 / -1;
+    }
+  }
+</style>

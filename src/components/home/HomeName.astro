@@ -1,0 +1,113 @@
+---
+// R2, the name (blueprint 3): the first human moment. From 1024px it is asymmetric: the label in
+// columns 1–2, the lead in 3–7, the portrait in 9–12 and about 120px lower than the text. From
+// 640px the text is the full width up to 600px and the picture is under it, at the right, 70% wide.
+// On a phone: the text first, then the picture across the whole width of the screen.
+import Container from '../Container.astro';
+import Label from '../Label.astro';
+import Photo from '../Photo.astro';
+import TextLink from '../TextLink.astro';
+import { microcopy } from '../../data/site.ts';
+import type { Photo as PhotoRecord } from '../../lib/schemas.ts';
+
+interface Props {
+  photo: PhotoRecord;
+}
+
+const { photo } = Astro.props;
+const c = microcopy.home.name;
+---
+
+<section class="name" aria-label={c.label}>
+  <Container grid>
+    <div class="label">
+      <Label>{c.label}</Label>
+    </div>
+
+    <div class="text">
+      <p class="lead" set:html={c.lead} />
+      <TextLink href="/our-house" arrow>
+        {c.link}
+      </TextLink>
+    </div>
+
+    <div class="picture" data-reveal>
+      <Photo
+        image={photo.image}
+        ratio="4:5"
+        kind="editorial"
+        sizes="(min-width: 1024px) 33vw, (min-width: 640px) 70vw, 100vw"
+        alt={photo.image.kind === 'placeholder' ? photo.image.description : ''}
+      />
+    </div>
+  </Container>
+</section>
+
+<style>
+  .name {
+    padding-block: var(--space-section);
+  }
+
+  .name :global(.container) {
+    row-gap: var(--space-32);
+  }
+
+  .label,
+  .text,
+  .picture {
+    grid-column: 1 / -1;
+    min-inline-size: 0;
+  }
+
+  .text {
+    display: grid;
+    gap: var(--space-24);
+    align-content: start;
+    justify-items: start;
+    max-inline-size: 37.5rem;
+  }
+
+  .lead {
+    font-family: var(--font-serif);
+    font-size: var(--fs-lead);
+    line-height: var(--lh-lead);
+  }
+
+  /* A phone: the picture runs from edge to edge of the screen; the text keeps its margins. */
+  .picture {
+    margin-inline: calc(-1 * var(--margin));
+  }
+
+  @media (min-width: 40rem) {
+    .picture {
+      justify-self: end;
+      inline-size: 70%;
+      margin-inline: 0;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .name {
+      min-block-size: 70svh;
+    }
+
+    .label {
+      grid-column: 1 / span 2;
+      grid-row: 1;
+    }
+
+    .text {
+      grid-column: 3 / span 5;
+      grid-row: 1;
+    }
+
+    /* About 120px lower than the text. */
+    .picture {
+      grid-column: 9 / span 4;
+      grid-row: 1;
+      inline-size: auto;
+      justify-self: stretch;
+      margin-block-start: 7.5rem;
+    }
+  }
+</style>

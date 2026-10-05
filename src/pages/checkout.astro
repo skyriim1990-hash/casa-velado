@@ -1,0 +1,510 @@
+---
+// Checkout (blueprint 2.1, 2.3): one page in three visible blocks, Contact, Delivery (to an
+// address, or collection from the Tasting Room) and Payment (card or bank transfer, shown only
+// for illustration), with the order summary set as book lines beside it (above it on a phone).
+// “Place order” does not place one: it shows “This is a demonstration project. Your order has not
+// been placed.” Nothing is charged, nothing is sent and no card or bank detail is asked for.
+//
+// The cart lives in the browser, so the page needs JavaScript (blueprint 9.2): src/scripts/checkout.ts
+// reads the cart, draws the summary and shows either the form or “Your cart is empty.”.
+// src/scripts/forms.ts checks the fields and shows the confirmation, as on /contact. Without
+// script the page says the checkout needs JavaScript and shows nothing that pretends to work.
+import Base from '../layouts/Base.astro';
+import BookLine from '../components/BookLine.astro';
+import Button from '../components/Button.astro';
+import Container from '../components/Container.astro';
+import Field from '../components/Field.astro';
+import RadioOption from '../components/RadioOption.astro';
+import { delivery as fees } from '../data/contact.ts';
+import { identity, microcopy, nav } from '../data/site.ts';
+
+const c = microcopy.checkout;
+const f = microcopy.forms;
+const e = f.errors;
+const d = microcopy.cartDrawer;
+const [contact, delivery, payment] = c.sections;
+
+const formAttrs = {
+  'data-summary-text': f.summary,
+  'data-summary-one-text': f.summaryOne,
+  'data-sending': f.sending,
+  'data-confirmation': identity.demo.order,
+};
+
+// Before you order: Terms, Privacy and Shipping. Cookies are not about an order.
+const legal = nav.legal.filter((item) => item.href !== '/cookies');
+---
+
+<Base title={c.title} description={c.description}>
+  <div
+    class="page"
+    data-checkout
+    data-line-text={c.line}
+    data-none-text={c.shippingNone}
+    data-shipping-cents={fees.shippingCents}
+    data-gift-cents={fees.giftWrapCents}
+  >
+    <Container grid>
+      <header class="head">
+        <h1>{c.title}</h1>
+        <p class="lead">{c.lead}</p>
+        <noscript>
+          <p class="note">{c.noscript}</p>
+        </noscript>
+      </header>
+
+      <!-- Shown by the script when the cart is empty. -->
+      <section class="empty" data-checkout-empty hidden aria-labelledby="co-empty">
+        <h2 id="co-empty">{c.empty}</h2>
+        <Button href="/cigars" variant="secondary">
+          {c.browse}
+        </Button>
+      </section>
+
+      <!-- The summary comes first in the page: above the form on a phone, beside it from 1024px. -->
+      <aside class="summary" data-checkout-body hidden aria-labelledby="co-summary">
+        <div class="summary-head">
+          <h2 id="co-summary">{c.summary}</h2>
+          <Button
+            variant="text"
+            data-dialog-open="cart"
+            aria-haspopup="dialog"
+            aria-controls="cart-drawer"
+            aria-expanded="false"
+          >
+            {c.editCart}
+          </Button>
+        </div>
+        <dl class="lines" data-summary-lines></dl>
+        <BookLine
+          rows={[
+            { label: d.subtotal, value: '', attrs: { 'data-sum': 'subtotal' } },
+            { label: d.shippingLabel, value: '', attrs: { 'data-sum': 'shipping' } },
+            { label: d.giftWrapping, value: '', attrs: { 'data-sum': 'gift' } },
+            { label: d.total, value: '', attrs: { 'data-sum': 'total' } },
+          ]}
+        />
+
+        <template data-summary-row>
+          <div class="row">
+            <dt>
+              <span class="name" data-row-name></span>
+              <span class="detail" data-row-detail></span>
+            </dt>
+            <dd data-row-price></dd>
+          </div>
+        </template>
+      </aside>
+
+      <div class="form-col" data-checkout-body hidden>
+        <form id="checkout-form" data-demo-form novalidate {...formAttrs}>
+          <p class="error-summary" role="alert" data-form-summary></p>
+
+          <section class="block" aria-labelledby="co-contact">
+            <header class="block-head">
+              <h2 id="co-contact">{contact}</h2>
+            </header>
+            <Field
+              id="co-name"
+              name="name"
+              label={f.fields.name}
+              autocomplete="name"
+              data-msg-empty={e.name}
+            />
+            <Field
+              id="co-email"
+              name="email"
+              type="email"
+              label={f.fields.email}
+              autocomplete="email"
+              data-msg-empty={e.email}
+              data-msg-invalid={e.emailIncomplete}
+            />
+            <Field
+              id="co-phone"
+              name="phone"
+              type="tel"
+              label={f.fields.phone}
+              autocomplete="tel"
+              optional
+            />
+          </section>
+
+          <section class="block" aria-labelledby="co-delivery">
+            <header class="block-head">
+              <h2 id="co-delivery">{delivery}</h2>
+            </header>
+            <fieldset class="group">
+              <legend class="vh">{c.deliveryMethod}</legend>
+              <RadioOption
+                id="co-del-address"
+                name="delivery"
+                value="address"
+                label={c.methods.address}
+                checked
+              />
+              <RadioOption
+                id="co-del-collection"
+                name="delivery"
+                value="collection"
+                label={c.methods.collection}
+              />
+            </fieldset>
+
+            <div class="fields" data-delivery-address>
+              <Field
+                id="co-address"
+                name="address"
+                label={c.fields.address}
+                autocomplete="street-address"
+                data-msg-empty={c.errors.address}
+              />
+              <div class="pair">
+                <Field
+                  id="co-city"
+                  name="city"
+                  label={c.fields.city}
+                  autocomplete="address-level2"
+                  data-msg-empty={c.errors.city}
+                />
+                <Field
+                  id="co-postcode"
+                  name="postcode"
+                  label={c.fields.postcode}
+                  autocomplete="postal-code"
+                  data-msg-empty={c.errors.postcode}
+                />
+              </div>
+              <Field
+                id="co-country"
+                name="country"
+                label={c.fields.country}
+                autocomplete="country-name"
+                hint={c.countryHint}
+                data-msg-empty={c.errors.country}
+              />
+              <p class="note">{microcopy.delivery}</p>
+            </div>
+
+            <div class="fields" data-delivery-collection hidden>
+              <p class="note">{c.collectionNote}</p>
+              <BookLine
+                rows={[
+                  {
+                    label: microcopy.tastingRoom.address,
+                    value: microcopy.tastingRoom.addressValue,
+                  },
+                  { label: microcopy.tastingRoom.hours, value: microcopy.tastingRoom.hoursValue },
+                ]}
+              />
+            </div>
+          </section>
+
+          <section class="block" aria-labelledby="co-payment">
+            <header class="block-head">
+              <h2 id="co-payment">{payment}</h2>
+            </header>
+            <fieldset class="group">
+              <legend class="vh">{c.paymentMethod}</legend>
+              <RadioOption
+                id="co-pay-card"
+                name="payment"
+                value="card"
+                label={c.payment.card}
+                note={c.payment.cardNote}
+                checked
+              />
+              <RadioOption
+                id="co-pay-bank"
+                name="payment"
+                value="bank"
+                label={c.payment.bank}
+                note={c.payment.bankNote}
+              />
+            </fieldset>
+            <p class="note">{c.payment.illustration}</p>
+          </section>
+
+          <div class="submit">
+            <Button type="submit" data-form-submit disabled>
+              {c.place}
+            </Button>
+            <p class="fine">
+              {c.legalLead}{' '}
+              {legal.map((item, i) => (
+                <>
+                  {i > 0 && (i === legal.length - 1 ? ' and ' : ', ')}
+                  <a href={item.href}>{item.label}</a>
+                </>
+              ))}
+              .
+            </p>
+          </div>
+        </form>
+
+        <div class="done" data-form-done="checkout-form" role="status" tabindex="-1" hidden>
+          <p data-form-done-text></p>
+          <Button href="/cigars" variant="secondary">
+            {c.browse}
+          </Button>
+        </div>
+      </div>
+    </Container>
+  </div>
+</Base>
+
+<script>
+  import '../scripts/forms.ts';
+  import '../scripts/checkout.ts';
+</script>
+
+<style>
+  /* Reserved, so the footer does not jump when the script decides what to show. */
+  .page {
+    min-block-size: 80svh;
+    padding-block: var(--space-48) var(--space-section);
+  }
+
+  .head,
+  .empty,
+  .summary,
+  .form-col {
+    grid-column: 1 / -1;
+    min-inline-size: 0;
+  }
+
+  .head {
+    display: grid;
+    gap: var(--space-16);
+    justify-items: start;
+    margin-block-end: var(--space-32);
+  }
+
+  .lead {
+    max-inline-size: 32ch;
+    font-family: var(--font-serif);
+    font-size: var(--fs-lead);
+    line-height: var(--lh-lead);
+    color: var(--text-2);
+  }
+
+  .note,
+  .fine {
+    max-inline-size: 36ch;
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--text-2);
+  }
+
+  .fine {
+    max-inline-size: none;
+  }
+
+  /* An empty cart: a sentence and the way out. */
+  .empty {
+    display: grid;
+    gap: var(--space-24);
+    justify-items: start;
+  }
+
+  .empty h2 {
+    font-size: var(--fs-h3);
+    line-height: var(--lh-h3);
+  }
+
+  /* ── The summary: the lines of the order, then the totals ── */
+  .summary {
+    display: grid;
+    gap: var(--space-16);
+    align-content: start;
+    margin-block-end: var(--space-48);
+    padding: var(--space-24);
+    background: var(--surface);
+  }
+
+  .summary-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-16);
+  }
+
+  .summary-head h2 {
+    font-size: var(--fs-h3);
+    line-height: var(--lh-h3);
+  }
+
+  .summary-head :global(.btn) {
+    margin-inline-end: calc(-1 * var(--space-8));
+    font-size: var(--fs-small);
+  }
+
+  /* One line of the order: the name and the format, the price at the right. */
+  .lines {
+    display: grid;
+  }
+
+  .row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-16);
+    padding-block: var(--space-12);
+    border-bottom: var(--line) solid var(--rule);
+  }
+
+  .row dt {
+    display: grid;
+    gap: var(--space-4);
+    min-inline-size: 0;
+  }
+
+  .name {
+    font-family: var(--font-serif);
+    font-size: var(--fs-h4);
+    font-weight: var(--fw-medium);
+    line-height: var(--lh-h4);
+  }
+
+  .detail {
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--text-2);
+  }
+
+  .row dd {
+    margin: 0;
+    flex: none;
+    font-size: var(--fs-button);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  /* ── The form ── */
+  form {
+    display: grid;
+    gap: var(--space-48);
+    max-inline-size: 32rem;
+  }
+
+  .block {
+    display: grid;
+    gap: var(--space-24);
+    align-content: start;
+  }
+
+  .block-head {
+    display: grid;
+    gap: var(--space-8);
+  }
+
+  .block-head h2 {
+    font-size: var(--fs-h3);
+    line-height: var(--lh-h3);
+  }
+
+  .group {
+    display: grid;
+    min-inline-size: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .fields {
+    display: grid;
+    gap: var(--space-24);
+  }
+
+  .pair {
+    display: grid;
+    gap: var(--space-24);
+  }
+
+  /* The legend names the group for a screen reader; the heading above already says it. */
+  .vh {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .error-summary {
+    font-size: var(--fs-ui);
+    color: var(--error);
+  }
+
+  .error-summary:empty {
+    display: none;
+  }
+
+  .submit {
+    display: grid;
+    gap: var(--space-16);
+  }
+
+  .done {
+    display: grid;
+    gap: var(--space-24);
+    justify-items: start;
+    max-inline-size: 32rem;
+    padding: var(--space-24);
+    border: var(--line) solid var(--border);
+    font-family: var(--font-serif);
+    font-size: var(--fs-h4);
+    line-height: var(--lh-h4);
+  }
+
+  .done[hidden] {
+    display: none;
+  }
+
+  /* Tablet: the summary, then the form, in the first six of eight columns. */
+  @media (min-width: 40rem) {
+    .empty,
+    .summary,
+    .form-col {
+      grid-column: 1 / span 6;
+    }
+
+    .pair {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  /* From 1024px: the form on the left, the summary beside it, kept in view while the form is filled. */
+  @media (min-width: 64rem) {
+    .page {
+      padding-block: var(--space-96) var(--space-section);
+    }
+
+    .head {
+      grid-column: 1 / span 8;
+      margin-block-end: var(--space-48);
+    }
+
+    .empty,
+    .form-col {
+      grid-column: 1 / span 7;
+      grid-row: 2;
+    }
+
+    .summary {
+      grid-column: 9 / -1;
+      grid-row: 2;
+      align-self: start;
+      margin-block-end: 0;
+    }
+  }
+
+  @media (min-width: 64rem) and (min-height: 50rem) {
+    .summary {
+      position: sticky;
+      inset-block-start: calc(var(--header-offset) + var(--space-24));
+      max-block-size: calc(100svh - var(--header-offset) - var(--space-48));
+      overflow-y: auto;
+    }
+  }
+</style>

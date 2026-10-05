@@ -1,0 +1,83 @@
+---
+// The evolution of the band (blueprint 2.3): the three approved rings, oldest first, as the brand
+// files draw them (src/brand/band-1987.svg, band-mid.svg, band-current.svg, through BrandMark and
+// unchanged). The captions are the house record's: 1987, [YEAR] (the middle ring's year is not
+// known, so the placeholder stays) and Today. No frame, no card, no motion: the rings
+// are the only thing on the page that is drawn, and they are shown at their own size, one beside
+// the other from 640px and one under the other below.
+import BrandMark from '../BrandMark.astro';
+import Container from '../Container.astro';
+import { microcopy } from '../../data/site.ts';
+
+interface Props {
+  rings: readonly { mark: 'band-1987' | 'band-mid' | 'band-current'; label: string }[];
+}
+
+const { rings } = Astro.props;
+const c = microcopy.ourHouse.bands;
+const version = (mark: string, label: string) =>
+  mark === 'band-1987' ? label : mark === 'band-mid' ? c.middle : c.today;
+---
+
+<section class="bands" aria-labelledby="bands-title">
+  <Container>
+    <h2 id="bands-title">{c.title}</h2>
+    <ol class="rings">
+      {rings.map((ring) => (
+        <li>
+          <figure>
+            <BrandMark
+              mark={ring.mark}
+              label={c.label.replace('{version}', version(ring.mark, ring.label))}
+            />
+            <figcaption>{ring.label}</figcaption>
+          </figure>
+        </li>
+      ))}
+    </ol>
+  </Container>
+</section>
+
+<style>
+  .bands {
+    padding-block: var(--space-section);
+  }
+
+  h2 {
+    font-size: var(--fs-h2);
+    line-height: var(--lh-h2);
+    margin-block-end: var(--space-32);
+  }
+
+  .rings {
+    display: grid;
+    gap: var(--space-32);
+    padding: 0;
+    list-style: none;
+  }
+
+  figure {
+    display: grid;
+    gap: var(--space-12);
+    margin: 0;
+    max-inline-size: 26rem;
+  }
+
+  figcaption {
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-2);
+  }
+
+  @media (min-width: 40rem) {
+    .rings {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--gutter);
+    }
+
+    figure {
+      max-inline-size: none;
+    }
+  }
+</style>

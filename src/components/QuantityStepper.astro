@@ -1,0 +1,122 @@
+---
+// The quantity stepper (blueprint 4.6, 4.7): − 1 +. The number is a real <input type="number">,
+// so without JavaScript it can still be typed and with it, it is kept to a whole number inside
+// the limit (src/scripts/product.ts and cart.ts). The two buttons are 48px squares and only show
+// once the script runs. Their names come from the page, so each says what it changes.
+interface Props {
+  id: string;
+  /** The accessible name of the number. */
+  label: string;
+  decreaseLabel: string;
+  increaseLabel: string;
+  value?: number;
+  min?: number;
+  max: number;
+  describedby?: string;
+  class?: string;
+  [attr: `data-${string}`]: string | boolean | undefined;
+}
+
+const {
+  id,
+  label,
+  decreaseLabel,
+  increaseLabel,
+  value = 1,
+  min = 1,
+  max,
+  describedby,
+  class: className,
+  ...rest
+} = Astro.props;
+---
+
+<div class:list={['stepper', className]} data-stepper {...rest}>
+  <button class="step" type="button" data-step="-1" aria-controls={id} aria-label={decreaseLabel}>
+    <span aria-hidden="true">−</span>
+  </button>
+  <input
+    class="qty"
+    {id}
+    type="number"
+    inputmode="numeric"
+    step="1"
+    {min}
+    {max}
+    {value}
+    aria-label={label}
+    aria-describedby={describedby}
+    data-qty
+  />
+  <button class="step" type="button" data-step="1" aria-controls={id} aria-label={increaseLabel}>
+    <span aria-hidden="true">+</span>
+  </button>
+</div>
+
+<style>
+  .stepper {
+    display: inline-flex;
+    align-items: stretch;
+    border: var(--line) solid var(--border);
+  }
+
+  .step,
+  .qty {
+    box-sizing: border-box;
+    block-size: var(--target);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: var(--fs-ui);
+    line-height: 1;
+  }
+
+  .step {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: var(--target);
+    cursor: pointer;
+  }
+
+  /* Short of the limit the button is plain; at it, it is dimmed and says so by aria-disabled
+     (a disabled button would lose the focus the moment it was pressed). */
+  .step[aria-disabled='true'] {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .qty {
+    inline-size: var(--target);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    appearance: textfield;
+    border-inline: var(--line) solid var(--rule);
+  }
+
+  .qty::-webkit-inner-spin-button,
+  .qty::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+
+  /* The buttons need the script; without it the number is typed. */
+  :global(html:not(.js)) .step {
+    display: none;
+  }
+
+  :global(html:not(.js)) .qty {
+    border-inline: 0;
+    inline-size: 4rem;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .step:not([aria-disabled='true']):hover {
+      background: var(--surface-2);
+    }
+  }
+</style>

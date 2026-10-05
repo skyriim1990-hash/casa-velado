@@ -1,0 +1,33 @@
+---
+// A status badge (blueprint 4.5, 5.4): text only, Plex 12px in capitals, a 1px border, 4px by
+// 8px of padding, square corners, no colour fill. A product card carries at most one. It is
+// told by its words, never by colour: Limited, Few remaining, Sold out. “Limited” has the
+// same border as the others, so gold stays a trace (decision of Stage 1).
+import { microcopy } from '../data/site.ts';
+
+interface Props {
+  status: keyof typeof microcopy.badges;
+  class?: string;
+}
+
+const { status, class: className } = Astro.props;
+---
+
+<span class:list={['badge', className]}>{microcopy.badges[status]}</span>
+
+<style>
+  .badge {
+    display: inline-block;
+    padding: var(--space-4) var(--space-8);
+    border: var(--line) solid var(--border);
+    border-radius: 0;
+    font-family: var(--font-sans);
+    font-size: var(--fs-label);
+    font-weight: var(--fw-medium);
+    line-height: var(--lh-label);
+    letter-spacing: var(--ls-label);
+    text-transform: uppercase;
+    color: var(--text);
+    white-space: nowrap;
+  }
+</style>

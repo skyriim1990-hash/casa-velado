@@ -1,0 +1,124 @@
+---
+// Tobacco (blueprint 2.3): the proof behind the brand. The opening, five chapters (the field, the
+// galera, the pilón, ageing, the table), the harvest ledger on paper, the glossary and the end.
+// Everything is read from the records of Stage 4: the stages (text, facts, photograph), the lines
+// (the ledger), the glossary. A figure the owner has not confirmed shows as [NUMBER].
+//
+// The page is static HTML and has no script of its own: nothing here waits for JavaScript.
+import Base from '../layouts/Base.astro';
+import Button from '../components/Button.astro';
+import Container from '../components/Container.astro';
+import Photo from '../components/Photo.astro';
+import Glossary from '../components/tobacco/Glossary.astro';
+import HarvestLedger from '../components/tobacco/HarvestLedger.astro';
+import TobaccoChapter from '../components/tobacco/TobaccoChapter.astro';
+import { microcopy } from '../data/site.ts';
+import {
+  getGlossary,
+  getHarvestLedger,
+  getLedgerTokens,
+  getPhoto,
+  getTobaccoStages,
+  resolveFact,
+} from '../lib/catalogue.ts';
+import { fill } from '../lib/format.ts';
+
+const c = microcopy.tobacco;
+
+const [hero, stages, tokens, ledger, terms] = await Promise.all([
+  getPhoto('tobacco-field'),
+  getTobaccoStages(),
+  getLedgerTokens(),
+  getHarvestLedger(),
+  getGlossary(),
+]);
+
+const chapters = await Promise.all(
+  stages.map(async (stage, i) => {
+    if (stage.body === null) throw new Error(`Stage “${stage.id}” has no text`);
+    return {
+      id: stage.id,
+      // The Spanish word of the heading is marked for screen readers.
+      title: stage.title.replace(/(galera|pilón)/, '<i lang="es">$1</i>'),
+      paragraphs: stage.body.split('\n\n').map((paragraph) => fill(paragraph.trim(), tokens)),
+      facts: await Promise.all(stage.facts.map(resolveFact)),
+      image: (await getPhoto(stage.photo)).image,
+      side: i % 2 === 0 ? ('left' as const) : ('right' as const),
+    };
+  }),
+);
+---
+
+<Base title={c.title} description={c.description}>
+  <header class="hero">
+    <div class="media">
+      <Photo image={hero.image} kind="hero" sizes="100vw" priority />
+    </div>
+    <Container grid>
+      <h1>{c.title}</h1>
+      <p class="intro">{c.intro}</p>
+    </Container>
+  </header>
+
+  {chapters.map((chapter) => (
+    <TobaccoChapter {...chapter} />
+  ))}
+
+  <HarvestLedger rows={ledger} />
+  <Glossary {terms} />
+
+  <section class="closing" aria-label={c.cta}>
+    <Container>
+      <Button href="/cigars">{c.cta}</Button>
+    </Container>
+  </section>
+</Base>
+
+<style>
+  /* The photograph first, across the page in its three crops (16:9, 4:3, 4:5); the title and the
+     introduction under it, set like a caption in the book. Not the home page's text on the
+     picture. */
+  .hero .media :global(.photo) {
+    max-block-size: 85svh;
+  }
+
+  .hero :global(.container) {
+    padding-block: var(--space-32) var(--space-48);
+    row-gap: var(--space-16);
+  }
+
+  h1,
+  .intro {
+    grid-column: 1 / -1;
+    min-inline-size: 0;
+  }
+
+  .intro {
+    max-inline-size: 36ch;
+    font-family: var(--font-serif);
+    font-size: var(--fs-lead);
+    line-height: var(--lh-lead);
+    color: var(--text-2);
+  }
+
+  @media (min-width: 40rem) {
+    .hero :global(.container) {
+      padding-block: var(--space-48) var(--space-64);
+    }
+  }
+
+  @media (min-width: 64rem) {
+    h1 {
+      grid-column: 1 / span 6;
+    }
+
+    .intro {
+      grid-column: 8 / -1;
+      align-self: end;
+    }
+  }
+
+  .closing {
+    padding-block: var(--space-section);
+  }
+</style>

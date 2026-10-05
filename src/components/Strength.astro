@@ -1,0 +1,65 @@
+---
+// The strength indicator (blueprint 5.4): five bars, each 14 × 3px with 3px between, filled in
+// --text and empty in --rule, and the word beside them. The bars and the word are for the eye;
+// a screen reader gets one sentence instead: “Strength: 3 of 5, medium”.
+import { STRENGTH_WORDS, type Strength } from '../data/taxonomy.ts';
+import { microcopy } from '../data/site.ts';
+import { fill } from '../lib/format.ts';
+
+interface Props {
+  value: Strength;
+  class?: string;
+}
+
+const { value, class: className } = Astro.props;
+const word = STRENGTH_WORDS[value];
+const sentence = fill(microcopy.strengthSr, { n: value, word: word.toLowerCase() });
+---
+
+<span class:list={['strength', className]}>
+  <span class="bars" aria-hidden="true">
+    {[1, 2, 3, 4, 5].map((n) => (
+      <span class="bar" data-on={n <= value ? '' : undefined} />
+    ))}
+  </span>
+  <span class="word" aria-hidden="true">
+    {word}
+  </span>
+  <span class="sr">{sentence}</span>
+</span>
+
+<style>
+  .strength {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-12);
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+  }
+
+  .bars {
+    display: inline-flex;
+    gap: 3px;
+  }
+
+  .bar {
+    inline-size: 14px;
+    block-size: 3px;
+    background: var(--rule);
+  }
+
+  .bar[data-on] {
+    background: var(--text);
+  }
+
+  /* For screen readers only. */
+  .sr {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+</style>

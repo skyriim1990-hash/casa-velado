@@ -1,0 +1,194 @@
+---
+// The product gallery (blueprint 4.6, 8): the catalogue view, the band, the foot, the open box
+// and, when there is one, a hand for scale. Every frame is shown at 3:2 so the picture does not
+// change height when it changes (the frames' own crops are for the final photographs).
+//
+// No JavaScript: a horizontal strip that snaps picture by picture, at every width.
+// With it, below 1024px the same strip gets a counter (“1 / 5”) — the strip is natural
+// scroll-snap and nothing more; no dots, no buttons. From 1024px the strip becomes one large
+// picture with the thumbnails in a column on its left; a click changes the picture with a
+// 200ms cross-fade. No zoom, no enlargement on hover. Only opacity moves.
+import Photo from '../Photo.astro';
+import { microcopy } from '../../data/site.ts';
+import { fill } from '../../lib/format.ts';
+import type { ImageRef } from '../../lib/schemas.ts';
+
+interface Props {
+  /** The frames, in the order shown. */
+  images: ImageRef[];
+}
+
+const { images } = Astro.props;
+const p = microcopy.product;
+const total = images.length;
+---
+
+<div class="gallery" data-gallery>
+  <ul class="thumbs" data-thumbs>
+    {images.map((image, i) => (
+      <li>
+        <button
+          class="thumb"
+          type="button"
+          data-thumb={i}
+          aria-label={fill(p.photoOf, { n: i + 1, total })}
+          aria-current={i === 0 ? 'true' : undefined}
+        >
+          <Photo {image} ratio="1:1" alt="" kind="cartThumb" sizes="72px" />
+        </button>
+      </li>
+    ))}
+  </ul>
+
+  <div class="stage">
+    <!-- A strip that scrolls is a region of its own: it takes the keyboard (arrow keys) and has a name. -->
+    <div class="track" data-track role="region" aria-label={p.gallery} tabindex="0">
+      {images.map((image, i) => (
+        <figure
+          class:list={['slide', { 'is-active': i === 0 }]}
+          data-slide
+          role="group"
+          aria-roledescription="slide"
+          aria-label={fill(microcopy.product.counter, { n: i + 1, total })}
+        >
+          <Photo
+            {image}
+            ratio="3:2"
+            kind="productGallery"
+            sizes="(min-width: 1024px) 58vw, 100vw"
+            priority={i === 0}
+          />
+        </figure>
+      ))}
+    </div>
+    <p class="counter" data-counter aria-hidden="true">
+      {fill(p.counter, { n: 1, total })}
+    </p>
+  </div>
+</div>
+
+<style>
+  .gallery {
+    display: grid;
+    min-inline-size: 0;
+  }
+
+  .thumbs {
+    display: none;
+  }
+
+  .stage {
+    position: relative;
+    min-inline-size: 0;
+  }
+
+  /* The strip: every picture is one full width and snaps into place. */
+  .track {
+    display: flex;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+  }
+
+  .slide {
+    flex: 0 0 100%;
+    min-inline-size: 0;
+    margin: 0;
+    scroll-snap-align: start;
+  }
+
+  /* The counter is the script's: a number that follows the strip. */
+  .counter {
+    display: none;
+  }
+
+  :global(html.js) .counter {
+    display: block;
+    position: absolute;
+    inset-block-end: 0;
+    inset-inline-end: 0;
+    padding: var(--space-8) var(--space-12);
+    background: var(--bg);
+    color: var(--text);
+    font-size: var(--fs-small);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── From 1024px, with JavaScript: one large picture and the thumbnails at its left ── */
+  @media (min-width: 64rem) {
+    :global(html.js) .gallery {
+      grid-template-columns: 4.5rem minmax(0, 1fr);
+      gap: var(--space-16);
+      align-items: start;
+    }
+
+    :global(html.js) .thumbs {
+      display: grid;
+      gap: var(--space-8);
+      padding: 0;
+      list-style: none;
+    }
+
+    :global(html.js) .counter {
+      display: none;
+    }
+
+    :global(html.js) .track {
+      display: grid;
+      overflow: hidden;
+    }
+
+    :global(html.js) .slide {
+      grid-area: 1 / 1;
+      opacity: 0;
+      visibility: hidden;
+      transition:
+        opacity var(--dur-image) var(--ease-out),
+        visibility 0s linear var(--dur-image);
+    }
+
+    :global(html.js) .slide.is-active {
+      opacity: 1;
+      visibility: visible;
+      transition-delay: 0s;
+    }
+  }
+
+  .thumb {
+    display: block;
+    box-sizing: border-box;
+    inline-size: 100%;
+    padding: 0;
+    border: var(--line) solid transparent;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity var(--dur-image) var(--ease-out);
+  }
+
+  /* The picture you are looking at: full strength and a line round it, not colour alone. */
+  .thumb[aria-current='true'] {
+    border-color: var(--text);
+    opacity: 1;
+  }
+
+  .thumb :global(.placeholder) {
+    display: none;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .thumb:hover {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(html.js) .slide,
+    .thumb {
+      transition-duration: var(--dur-reduced);
+    }
+  }
+</style>

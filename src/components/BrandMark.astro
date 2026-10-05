@@ -1,0 +1,44 @@
+---
+// The one place brand SVGs are rendered. The SVG files in src/brand/ are inlined, so the
+// wordmark and monogram follow `currentColor` and the page's surface; the bands carry
+// their own paper and ink.
+import Wordmark from '../brand/logo-wordmark.svg';
+import WordmarkStacked from '../brand/logo-wordmark-stacked.svg';
+import Monogram from '../brand/monogram.svg';
+import Band1987 from '../brand/band-1987.svg';
+import BandMid from '../brand/band-mid.svg';
+import BandCurrent from '../brand/band-current.svg';
+
+const marks = {
+  wordmark: Wordmark,
+  'wordmark-stacked': WordmarkStacked,
+  monogram: Monogram,
+  'band-1987': Band1987,
+  'band-mid': BandMid,
+  'band-current': BandCurrent,
+} as const;
+
+interface Props {
+  mark: keyof typeof marks;
+  /** Accessible name. Omit only when the mark is decorative or already named by its context. */
+  label?: string;
+  class?: string;
+}
+
+const { mark, label, class: className } = Astro.props;
+const Mark = marks[mark];
+---
+
+{label ? (
+  <Mark class:list={['mark', className]} role="img" aria-label={label} focusable="false" />
+) : (
+  <Mark class:list={['mark', className]} aria-hidden="true" focusable="false" />
+)}
+
+<style>
+  .mark {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+</style>

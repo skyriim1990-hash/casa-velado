@@ -1,0 +1,33 @@
+---
+// The first thing a keyboard user reaches on every page (blueprint 9.2). Hidden off-screen
+// until it has focus, then it sits at the top left, ivory on the page colour like a primary
+// button.
+import { microcopy } from '../../data/site.ts';
+---
+
+<a class="skip" href="#main">
+  {microcopy.skipLink}
+</a>
+
+<style>
+  .skip {
+    position: fixed;
+    inset-block-start: var(--space-8);
+    inset-inline-start: var(--space-8);
+    z-index: var(--z-gate);
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--target);
+    padding-inline: var(--space-24);
+    background: var(--text);
+    color: var(--bg);
+    font-size: var(--fs-button);
+    font-weight: var(--fw-medium);
+    text-decoration: none;
+    transform: translateY(-200%);
+  }
+
+  .skip:focus {
+    transform: none;
+  }
+</style>

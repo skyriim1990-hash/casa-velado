@@ -1,0 +1,43 @@
+---
+// The product grid (blueprint 7.3): 1 column below 640px, 2 from 640, 3 from 1024, 3 from
+// 1280, 4 from 1600. On a phone a card is one full column, because a cigar at half width is
+// too small to show its scale. The items are the <li>s of cards.
+interface Props {
+  class?: string;
+  [attr: `data-${string}`]: string | boolean | undefined;
+}
+
+const { class: className, ...rest } = Astro.props;
+---
+
+<ul class:list={['product-grid', className]} {...rest}>
+  <slot />
+</ul>
+
+<style>
+  .product-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-48) var(--gutter);
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (min-width: 40rem) {
+    .product-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .product-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 100rem) {
+    .product-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+</style>

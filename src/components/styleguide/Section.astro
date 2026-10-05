@@ -1,0 +1,44 @@
+---
+// One titled section of /styleguide. Not used anywhere else.
+import Container from '../Container.astro';
+import Label from '../Label.astro';
+
+interface Props {
+  id: string;
+  label: string;
+  title: string;
+  surface?: 'dark' | 'paper';
+}
+
+const { id, label, title, surface = 'dark' } = Astro.props;
+---
+
+<section aria-labelledby={`${id}-title`} data-surface={surface} class="section" id={id}>
+  <Container>
+    <header class="head">
+      <Label>{label}</Label>
+      <h2 id={`${id}-title`}>{title}</h2>
+    </header>
+    <div class="body">
+      <slot />
+    </div>
+  </Container>
+</section>
+
+<style>
+  .section {
+    padding-block: var(--space-section);
+    border-top: var(--line) solid var(--rule);
+  }
+
+  .head {
+    display: grid;
+    gap: var(--space-16);
+    margin-bottom: var(--space-48);
+  }
+
+  .body {
+    display: grid;
+    gap: var(--space-64);
+  }
+</style>

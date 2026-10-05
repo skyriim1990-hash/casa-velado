@@ -1,0 +1,357 @@
+---
+// The collection (blueprint 2.3, 4.4): the 16 items of the catalogue, by line or all together,
+// with filters and sorting. An index, not a shop window: no hero, no offers, no add button.
+//
+// The page is static HTML. Without JavaScript it shows every cigar, by line, with a row of
+// links to the lines. With it (src/scripts/collection.ts) the view, the filters and the sort
+// work on the cards already in the page and write themselves to the URL.
+import Base from '../layouts/Base.astro';
+import Button from '../components/Button.astro';
+import Container from '../components/Container.astro';
+import CollectionToolbar from '../components/collection/CollectionToolbar.astro';
+import FilterDialog from '../components/collection/FilterDialog.astro';
+import LineSection from '../components/collection/LineSection.astro';
+import ProductGrid from '../components/collection/ProductGrid.astro';
+import { microcopy } from '../data/site.ts';
+import { getLines, getLineWrapper, getProducts } from '../lib/catalogue.ts';
+import { filterGroups, itemOf } from '../lib/collection.ts';
+import { fill } from '../lib/format.ts';
+
+const c = microcopy.collection;
+
+const [lines, products] = await Promise.all([getLines(), getProducts()]);
+const lineById = new Map(lines.map((l) => [l.id, l]));
+
+// One entry per card, in the house order: line, then catalogue (the “Recommended” order).
+const entries = products.map((product, order) => {
+  const line = lineById.get(product.line);
+  if (!line) throw new Error(`Product “${product.id}” has no line`);
+  return { product, line, item: itemOf(product, line, order) };
+});
+const items = entries.map((e) => e.item);
+const groups = filterGroups(lines);
+
+// The strings the script writes, from data/site.ts, so they are written once.
+const f = microcopy.filters;
+const copy = JSON.stringify({
+  items: c.items,
+  itemsOf: c.itemsOf,
+  title: f.title,
+  withCount: f.withCount,
+  show: f.show,
+  showOne: f.showOne,
+  shown: f.shown,
+  shownOne: f.shownOne,
+  remove: f.remove,
+  chip: f.chip,
+  cigarWord: f.cigarWord,
+  cigarsWord: f.cigarsWord,
+});
+
+const sections = await Promise.all(
+  lines.map(async (line) => ({
+    line,
+    products: entries.filter((e) => e.line.id === line.id),
+    wrapper: line.kind === 'sampler' ? undefined : await getLineWrapper(line),
+    // Tobacco's harvest ledger has a row for every blended line (blueprint 2.3).
+    aboutHref: line.kind === 'sampler' ? undefined : `/tobacco#ledger-${line.id}`,
+  })),
+);
+---
+
+<Base title={c.title} description={c.description}>
+  <!-- A link with filters in it is filled in by the script. Until it has, the list is hidden,
+       so the page does not show every cigar for a moment and then change under the reader. A
+       few seconds is the limit: if the script never arrives, the list shows. -->
+  <script is:inline slot="head">
+    if (location.search) document.documentElement.classList.add('cx-pending');
+  </script>
+  <div data-collection data-copy={copy}>
+    <header class="intro">
+      <Container>
+        <div class="intro-grid">
+          <h1>{c.title}</h1>
+          <div class="intro-text">
+            <p class="lead">{c.intro}</p>
+            <p class="count" data-results-count>
+              {fill(c.items, { n: items.length })}
+            </p>
+            <noscript>
+              <p class="noscript">{c.noscript}</p>
+            </noscript>
+          </div>
+        </div>
+      </Container>
+    </header>
+
+    <!-- Without JavaScript the toolbar is hidden; the lines can still be reached. -->
+    <nav class="jump" aria-label={c.jump}>
+      <Container>
+        <ul>
+          {lines.map((line) => (
+            <li>
+              <a href={`#${line.id}`}>{line.name}</a>
+            </li>
+          ))}
+        </ul>
+      </Container>
+    </nav>
+
+    <CollectionToolbar {groups} {items} />
+
+    <div class="chips-row" data-chips hidden>
+      <Container>
+        <div class="chips">
+          <ul class="chip-list" aria-label={microcopy.filters.active} data-chip-list></ul>
+          <Button type="button" variant="text" data-filter-clear-all>
+            {microcopy.filters.clearAll}
+          </Button>
+        </div>
+      </Container>
+    </div>
+
+    <div class="lists" data-lists>
+      <div data-by-line>
+        {sections.map((section) => (
+          <LineSection {...section} />
+        ))}
+      </div>
+
+      <section class="all" data-all aria-labelledby="all-title" hidden>
+        <Container>
+          <h2 class="visually-hidden" id="all-title">
+            {c.allHeading}
+          </h2>
+          <ProductGrid data-grid />
+        </Container>
+      </section>
+
+      <div class="empty" data-empty hidden>
+        <Container>
+          <p class="empty-text">{microcopy.filters.none}</p>
+          <Button type="button" data-filter-clear-all>
+            {microcopy.filters.clear}
+          </Button>
+        </Container>
+      </div>
+    </div>
+
+    <FilterDialog />
+  </div>
+</Base>
+
+<script>
+  import '../scripts/collection.ts';
+</script>
+
+<style>
+  .intro {
+    padding-block: var(--space-48) var(--space-32);
+  }
+
+  .intro-grid {
+    display: grid;
+    gap: var(--space-24);
+  }
+
+  .intro-text {
+    display: grid;
+    gap: var(--space-16);
+    align-content: start;
+  }
+
+  .lead {
+    max-inline-size: 36ch;
+    font-family: var(--font-serif);
+    font-size: var(--fs-lead);
+    line-height: var(--lh-lead);
+  }
+
+  .count {
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--text-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .noscript {
+    max-inline-size: var(--measure);
+    font-size: var(--fs-small);
+    color: var(--text-2);
+  }
+
+  /* From 640px the name sits on the left and the sentence on the right; from 1024px the
+     sentence starts at the seventh column. */
+  @media (min-width: 40rem) {
+    .intro {
+      padding-block: var(--space-64) var(--space-48);
+    }
+
+    .intro-grid {
+      grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+      column-gap: var(--gutter);
+      align-items: end;
+    }
+
+    h1 {
+      grid-column: 1 / span 4;
+    }
+
+    .intro-text {
+      grid-column: 5 / -1;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .intro {
+      padding-block: var(--space-96) var(--space-64);
+    }
+
+    h1 {
+      grid-column: 1 / span 6;
+    }
+
+    .intro-text {
+      grid-column: 7 / -1;
+    }
+  }
+
+  /* Without JavaScript: the lines as a row of links. With it, the toolbar replaces them. */
+  .jump {
+    padding-block-end: var(--space-16);
+    border-block-end: var(--line) solid var(--rule);
+  }
+
+  .jump ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-24);
+    padding: 0;
+    list-style: none;
+  }
+
+  .jump a {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--target);
+  }
+
+  :global(html.js) .jump {
+    display: none;
+  }
+
+  /* The active filters, under the toolbar. */
+  .chips-row {
+    padding-block-start: var(--space-8);
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4) var(--space-12);
+  }
+
+  .chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-8);
+    padding: 0;
+    list-style: none;
+  }
+
+  /* A chip is a 48px target with a 36px outline inside it: square, 1px, no fill, no colour. */
+  .chip-list :global(.chip) {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--target);
+    padding-block: var(--space-4);
+  }
+
+  .chip-list :global(.chip-inner) {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-8);
+    block-size: 2.25rem;
+    padding-inline: var(--space-12);
+    border: var(--line) solid var(--border);
+    font-size: var(--fs-small);
+    line-height: 1;
+    color: var(--text);
+    transition: border-color var(--dur-fast) var(--ease-out);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .chip-list :global(.chip:hover .chip-inner) {
+      border-color: var(--text);
+    }
+  }
+
+  .lists {
+    min-block-size: 50vh;
+  }
+
+  .all {
+    padding-block: var(--space-48) var(--space-64);
+  }
+
+  .visually-hidden {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* The cards fade over 150ms when the view, the filters or the order change; nothing moves. */
+  .lists.is-fading {
+    animation: cx-fade var(--dur-fast) var(--ease-out);
+  }
+
+  @keyframes cx-fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lists.is-fading {
+      animation-duration: var(--dur-reduced);
+    }
+
+    .chip-list :global(.chip-inner) {
+      transition: none;
+    }
+  }
+
+  /* No results: calm, one sentence and one way out. */
+  .empty {
+    padding-block: var(--space-96);
+  }
+
+  .empty :global(.container) {
+    display: grid;
+    gap: var(--space-32);
+    justify-items: start;
+  }
+
+  .empty-text {
+    max-inline-size: 24ch;
+    font-family: var(--font-serif);
+    font-size: var(--fs-h3);
+    line-height: var(--lh-h3);
+  }
+
+  /* A link with filters: hidden until the script has filled the list in (see the head). */
+  :global(html.cx-pending) .lists {
+    visibility: hidden;
+    animation: cx-reveal 0s 3s forwards;
+  }
+
+  @keyframes cx-reveal {
+    to {
+      visibility: visible;
+    }
+  }
+</style>

@@ -1,0 +1,365 @@
+---
+// The cart drawer (blueprint 4.7, 8). It opens from the right, 440px wide from 640px and full
+// width below. The heading “Cart (n)” and a Close button, the lines (a small photograph, the
+// line and vitola, the option, a stepper, the price, “Remove”), the totals as book lines, a
+// gift-wrapping tick, “Go to checkout” and “Continue browsing”. Empty, it says so, offers the
+// cigars and shows the Muestrario.
+//
+// The lines are drawn by src/scripts/cart.ts from the stored cart. The markup and the styles of
+// a line live here, as a <template> that the script copies, and the catalogue the prices come
+// from is the JSON below, built from the approved data, so nothing is written twice.
+// A native <dialog> opened with showModal(): inert page, held focus, Escape, focus return.
+import BookLine from '../BookLine.astro';
+import Button from '../Button.astro';
+import Checkbox from '../Checkbox.astro';
+import Photo from '../Photo.astro';
+import ProductCard from '../ProductCard.astro';
+import QuantityStepper from '../QuantityStepper.astro';
+import { delivery } from '../../data/contact.ts';
+import { microcopy } from '../../data/site.ts';
+import { getCartCatalogue } from '../../lib/cart-catalogue.ts';
+import { getLine, getProduct, getProducts } from '../../lib/catalogue.ts';
+import { formatPrice } from '../../lib/format.ts';
+
+const c = microcopy.cartDrawer;
+const [cartWord] = microcopy.cart.split(' (');
+
+// The Muestrario in the empty cart is read from the catalogue.
+const [sampler, samplerLine, products, catalogue] = await Promise.all([
+  getProduct('muestrario'),
+  getLine('muestrario'),
+  getProducts(),
+  getCartCatalogue(),
+]);
+
+// What the script says and does, from data/site.ts, so it is written once.
+const copy = {
+  added: microcopy.added,
+  announce: c.announce,
+  announceOne: c.announceOne,
+  has: c.has,
+  hasOne: c.hasOne,
+  empty: c.empty,
+  decreaseFor: c.decreaseFor,
+  increaseFor: c.increaseFor,
+  quantityFor: c.quantityFor,
+  removeFor: c.removeFor,
+  quantityNow: c.quantityNow,
+  removed: c.removed,
+  atMost: c.atMost,
+  giftOn: c.giftOn,
+  giftOff: c.giftOff,
+};
+const data = JSON.stringify({
+  catalogue,
+  copy,
+  zero: formatPrice(0),
+  giftCents: delivery.giftWrapCents,
+}).replaceAll('<', '\\u003c');
+---
+
+<dialog id="cart-drawer" class="drawer" data-dialog="cart" aria-labelledby="cart-title">
+  <div class="panel">
+    <header class="head">
+      <h2 id="cart-title">
+        {cartWord} (<span data-cart-count>0</span>)
+      </h2>
+      <button class="close" type="button" data-dialog-close>
+        {microcopy.close}
+      </button>
+    </header>
+
+    <div class="body">
+      <div data-cart-empty>
+        <p class="lead">{c.empty}</p>
+        <Button href="/cigars" variant="secondary">
+          {c.browse}
+        </Button>
+
+        <div class="sampler">
+          <p class="sampler-text">{c.muestrarioHint}</p>
+          <ProductCard product={sampler} line={samplerLine} headingLevel={3} />
+        </div>
+      </div>
+
+      <ul class="lines" data-cart-lines hidden></ul>
+    </div>
+
+    <footer class="foot" data-cart-summary hidden>
+      <BookLine
+        rows={[
+          { label: c.subtotal, value: formatPrice(0), attrs: { 'data-cart-subtotal': '' } },
+          { label: c.shippingLabel, value: c.shippingValue },
+          { label: c.total, value: formatPrice(0), attrs: { 'data-cart-total': '' } },
+        ]}
+      />
+      <Checkbox
+        id="cart-gift"
+        name="gift"
+        label={c.giftWrapping}
+        note={formatPrice(delivery.giftWrapCents)}
+        data-cart-gift
+      />
+      <Button href="/checkout">{c.checkout}</Button>
+      <Button variant="text" data-dialog-close>
+        {c.continue}
+      </Button>
+    </footer>
+
+    <!-- Spoken inside the panel: while it is open the rest of the page is inert (blueprint 9.2). -->
+    <p class="status" role="status" aria-live="polite" data-dialog-status></p>
+  </div>
+
+  <!-- One line of the cart. Copied by src/scripts/cart.ts for each stored line. -->
+  <template data-cart-row>
+    <li class="row" data-row>
+      <a class="thumb" data-row-thumb tabindex="-1" aria-hidden="true"></a>
+      <div class="info">
+        <p class="name">
+          <a data-row-name></a>
+        </p>
+        <p class="option" data-row-option></p>
+        <div class="controls">
+          <QuantityStepper
+            id="cart-qty"
+            label=""
+            decreaseLabel=""
+            increaseLabel=""
+            max={10}
+            class="row-stepper"
+          />
+          <p class="price" data-row-price></p>
+        </div>
+        <Button variant="text" class="remove" data-remove>
+          {c.remove}
+        </Button>
+      </div>
+    </li>
+  </template>
+
+  <!-- The small photograph of each product, for the lines. A placeholder shows only its block. -->
+  {products.map((product) => (
+    <template data-cart-thumb={product.id}>
+      <Photo image={product.images.catalog} alt="" kind="cartThumb" sizes="72px" />
+    </template>
+  ))}
+
+  <script type="application/json" id="cart-data" set:html={data} />
+</dialog>
+
+<style>
+  .drawer {
+    inline-size: 100%;
+    block-size: 100%;
+    margin-inline: auto 0;
+  }
+
+  @media (min-width: 40rem) {
+    .drawer {
+      inline-size: 27.5rem; /* 440px */
+      border-inline-start: var(--line) solid var(--rule);
+    }
+  }
+
+  .drawer::backdrop {
+    background: color-mix(in srgb, var(--bg) 50%, transparent);
+  }
+
+  .panel {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    block-size: 100%;
+    background: var(--surface);
+  }
+
+  .head {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-16);
+    padding-inline: var(--space-24);
+    block-size: var(--header-h);
+    border-bottom: var(--line) solid var(--rule);
+  }
+
+  h2 {
+    font-size: var(--fs-h3);
+    line-height: var(--lh-h3);
+  }
+
+  .close {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--target);
+    margin-inline-end: calc(-1 * var(--space-12));
+    padding-inline: var(--space-12);
+    font-size: var(--fs-ui);
+    line-height: 1;
+  }
+
+  .body {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: var(--space-16) var(--space-24) var(--space-32);
+  }
+
+  [data-cart-empty] {
+    display: grid;
+    gap: var(--space-24);
+    justify-items: start;
+    padding-block-start: var(--space-16);
+  }
+
+  .lead {
+    font-family: var(--font-serif);
+    font-size: var(--fs-lead);
+    line-height: var(--lh-lead);
+  }
+
+  /* The Muestrario: the sentence, then the same card as everywhere else. */
+  .sampler {
+    display: grid;
+    gap: var(--space-16);
+    inline-size: 100%;
+    margin-block-start: var(--space-16);
+    padding-block-start: var(--space-24);
+    border-top: var(--line) solid var(--rule);
+  }
+
+  .sampler-text {
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--text-2);
+  }
+
+  /* ── A line ── */
+  .lines {
+    padding: 0;
+    list-style: none;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    gap: var(--space-16);
+    padding-block: var(--space-16);
+    border-bottom: var(--line) solid var(--rule);
+  }
+
+  .thumb {
+    display: block;
+    align-self: start;
+    text-decoration: none;
+  }
+
+  .thumb :global(.placeholder) {
+    display: none;
+  }
+
+  .info {
+    display: grid;
+    gap: var(--space-4);
+    justify-items: start;
+    min-inline-size: 0;
+  }
+
+  .name {
+    font-family: var(--font-serif);
+    font-size: var(--fs-h4);
+    font-weight: var(--fw-medium);
+    line-height: var(--lh-h4);
+  }
+
+  .name a {
+    text-decoration-color: transparent;
+  }
+
+  .option {
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--text-2);
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-8) var(--space-16);
+    inline-size: 100%;
+    margin-block-start: var(--space-8);
+  }
+
+  .price {
+    font-size: var(--fs-ui);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .info :global(.remove) {
+    margin-inline-start: calc(-1 * var(--space-8));
+    font-size: var(--fs-small);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .name a:hover {
+      text-decoration-color: currentColor;
+    }
+  }
+
+  .foot {
+    display: grid;
+    flex: none;
+    gap: var(--space-16);
+    padding: var(--space-16) var(--space-24) var(--space-24);
+    border-top: var(--line) solid var(--rule);
+    background: var(--surface);
+  }
+
+  .foot :global(.btn--text) {
+    justify-self: center;
+  }
+
+  /* Spoken, never seen. */
+  .status {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* From the right, in 250ms, with the page dimmed to 50% (blueprint 8). */
+  .drawer[open] {
+    animation: drawer-in var(--dur-base) var(--ease-out);
+  }
+
+  .drawer[open]::backdrop {
+    animation: scrim-in var(--dur-base) var(--ease-out);
+  }
+
+  @keyframes drawer-in {
+    from {
+      transform: translateX(100%);
+    }
+  }
+
+  @keyframes scrim-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .drawer[open] {
+      animation: scrim-in var(--dur-reduced) linear;
+    }
+
+    .drawer[open]::backdrop {
+      animation-duration: var(--dur-reduced);
+    }
+  }
+</style>

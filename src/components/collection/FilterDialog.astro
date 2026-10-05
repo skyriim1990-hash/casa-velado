@@ -1,0 +1,149 @@
+---
+// The filter panel below 1024px (blueprint 7.3): from 640px a drawer from the right, 400px
+// wide; below 640px a full screen. It is the same native <dialog> as the cart drawer, opened
+// with showModal(): the page behind is inert, focus is held, Escape closes, focus goes back to
+// the button that opened it.
+//
+// Its body stays empty until the script moves the filter groups in. At the bottom, a fixed
+// area with “Show 8 cigars” and “Clear all”. Below 640px the choices are staged: they change
+// nothing on the page until “Show n cigars” is pressed, and n follows the choices. From 640px
+// they apply at once, and the button only closes the panel.
+import Button from '../Button.astro';
+import { microcopy } from '../../data/site.ts';
+
+const t = microcopy.filters;
+---
+
+<dialog
+  id="filter-panel"
+  class="drawer"
+  data-dialog="filters"
+  data-filter-dialog
+  aria-labelledby="filter-panel-title"
+>
+  <div class="panel">
+    <header class="head">
+      <h2 id="filter-panel-title">{t.title}</h2>
+      <button class="close" type="button" data-dialog-close>
+        {microcopy.close}
+      </button>
+    </header>
+
+    <div class="body" data-groups-slot="dialog"></div>
+
+    <footer class="foot">
+      <Button type="button" data-filter-apply>
+        {t.show.replace('{n}', '0')}
+      </Button>
+      <Button type="button" variant="text" data-filter-clear-all>
+        {t.clearAll}
+      </Button>
+    </footer>
+  </div>
+</dialog>
+
+<style>
+  .drawer {
+    inline-size: 100%;
+    block-size: 100%;
+    margin-inline: auto 0;
+    z-index: var(--z-drawer);
+  }
+
+  @media (min-width: 40rem) {
+    .drawer {
+      inline-size: 25rem; /* 400px */
+      border-inline-start: var(--line) solid var(--rule);
+    }
+  }
+
+  .drawer::backdrop {
+    background: color-mix(in srgb, var(--bg) 50%, transparent);
+  }
+
+  .panel {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    block-size: 100%;
+    background: var(--surface);
+  }
+
+  .head {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-16);
+    padding-inline: var(--space-24);
+    block-size: var(--header-h);
+    border-bottom: var(--line) solid var(--rule);
+  }
+
+  h2 {
+    font-size: var(--fs-h3);
+    line-height: var(--lh-h3);
+  }
+
+  .close {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--target);
+    margin-inline-end: calc(-1 * var(--space-12));
+    padding-inline: var(--space-12);
+    font-size: var(--fs-ui);
+    line-height: 1;
+  }
+
+  .body {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: var(--space-8) var(--space-24) var(--space-24);
+  }
+
+  /* The fixed action area. It keeps clear of the home indicator on a phone. */
+  .foot {
+    display: grid;
+    flex: none;
+    gap: var(--space-8);
+    padding: var(--space-16) var(--space-24)
+      calc(var(--space-16) + env(safe-area-inset-bottom, 0px));
+    border-top: var(--line) solid var(--rule);
+    background: var(--surface);
+  }
+
+  .foot :global(.btn--text) {
+    justify-self: center;
+  }
+
+  .drawer[open] {
+    animation: drawer-in var(--dur-base) var(--ease-out);
+  }
+
+  .drawer[open]::backdrop {
+    animation: scrim-in var(--dur-base) var(--ease-out);
+  }
+
+  @keyframes drawer-in {
+    from {
+      transform: translateX(100%);
+    }
+  }
+
+  @keyframes scrim-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .drawer[open] {
+      animation: scrim-in var(--dur-reduced) linear;
+    }
+
+    .drawer[open]::backdrop {
+      animation-duration: var(--dur-reduced);
+    }
+  }
+</style>

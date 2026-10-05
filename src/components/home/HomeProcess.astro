@@ -1,0 +1,174 @@
+---
+// R4, from field to box (blueprint 3): five stages, each with its title, 30–40 words
+// and one figure in the style of the book. The words and figures are the Stage 4 records;
+// a figure the owner has not confirmed shows as [NUMBER].
+//
+// Below 1024px, and without JavaScript, the five stages are five blocks one after another: the
+// picture (3:2), then the text. From 1024px, with JavaScript, the pictures stack in the left
+// columns (1–6), stuck in place, and change with a 400ms fade as each text on the right
+// (columns 8–12) passes the middle of the screen. The pictures do not move or scale.
+import BookLine from '../BookLine.astro';
+import Container from '../Container.astro';
+import Label from '../Label.astro';
+import Photo from '../Photo.astro';
+import TextLink from '../TextLink.astro';
+import { microcopy } from '../../data/site.ts';
+import type { ImageRef } from '../../lib/schemas.ts';
+
+export interface Stage {
+  id: string;
+  title: string;
+  /** The 30–40 words; may carry <i lang="es">. */
+  summary: string;
+  fact: { label: string; value: string };
+  image: ImageRef;
+}
+
+interface Props {
+  stages: Stage[];
+}
+
+const { stages } = Astro.props;
+const c = microcopy.home.process;
+---
+
+<section class="process" aria-labelledby="process-title" data-process>
+  <Container>
+    <div class="head" data-reveal>
+      <Label>{c.label}</Label>
+      <h2 id="process-title">{c.title}</h2>
+    </div>
+
+    <div class="stages">
+      {stages.map((stage, i) => (
+        <div class="stage" data-stage={i}>
+          <figure class:list={['figure', { 'is-active': i === 0 }]} data-figure>
+            <Photo
+              image={stage.image}
+              ratio="3:2"
+              kind="editorial"
+              sizes="(min-width: 1024px) 50vw, 100vw"
+              alt={stage.image.kind === 'placeholder' ? stage.image.description : ''}
+            />
+          </figure>
+          <article class="copy" data-copy aria-labelledby={`stage-${stage.id}`}>
+            <h3 id={`stage-${stage.id}`}>{stage.title}</h3>
+            <p set:html={stage.summary} />
+            <BookLine rows={[stage.fact]} />
+          </article>
+        </div>
+      ))}
+    </div>
+
+    <p class="cta">
+      <TextLink href="/tobacco" arrow>
+        {c.cta}
+      </TextLink>
+    </p>
+  </Container>
+</section>
+
+<style>
+  .process {
+    padding-block: var(--space-section);
+  }
+
+  .head {
+    display: grid;
+    gap: var(--space-16);
+    justify-items: start;
+    margin-block-end: var(--space-48);
+  }
+
+  h2 {
+    max-inline-size: 16ch;
+  }
+
+  /* One after another: the picture, then the text. */
+  .stages {
+    display: grid;
+    gap: var(--space-64);
+  }
+
+  .stage {
+    display: grid;
+    gap: var(--space-24);
+  }
+
+  .figure {
+    margin: 0;
+  }
+
+  .copy {
+    display: grid;
+    gap: var(--space-12);
+    align-content: start;
+    max-inline-size: 34rem;
+  }
+
+  h3 {
+    font-size: var(--fs-h3);
+    line-height: var(--lh-h3);
+    font-weight: var(--fw-regular);
+  }
+
+  .copy p {
+    max-inline-size: var(--measure);
+    color: var(--text-2);
+  }
+
+  .copy :global(.book-line) {
+    margin-block-start: var(--space-8);
+  }
+
+  .cta {
+    margin-block-start: var(--space-48);
+  }
+
+  /* From 1024px, with JavaScript: the pictures stack on the left and stay; the text goes by. */
+  @media (min-width: 64rem) {
+    :global(html.js) .stages {
+      grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+      column-gap: var(--gutter);
+      row-gap: 0;
+    }
+
+    :global(html.js) .stage {
+      display: contents;
+    }
+
+    :global(html.js) .figure {
+      grid-column: 1 / span 6;
+      grid-row: 1 / span 5;
+      align-self: start;
+      position: sticky;
+      inset-block-start: calc(var(--header-offset) + var(--space-24));
+      /* All five share the same place; only the current one shows. */
+      opacity: 0;
+      visibility: hidden;
+      transition:
+        opacity var(--dur-story) var(--ease-out),
+        visibility 0s linear var(--dur-story);
+    }
+
+    :global(html.js) .figure.is-active {
+      opacity: 1;
+      visibility: visible;
+      transition-delay: 0s;
+    }
+
+    :global(html.js) .copy {
+      grid-column: 8 / -1;
+      grid-row: auto;
+      /* The texts are about 50svh apart. */
+      min-block-size: 80svh;
+      align-content: center;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(html.js) .figure {
+      transition-duration: var(--dur-reduced);
+    }
+  }
+</style>

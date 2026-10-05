@@ -1,0 +1,132 @@
+---
+// The age check (blueprint 2.3, 5.4): a dark full-screen layer on the first visit with the
+// monogram, one sentence and two buttons. It centres its content: with the 404, the one place
+// the blueprint allows it. It claims nothing beyond the question: no verification, no service.
+//
+// A native <dialog> opened with showModal(): the page behind is inert and focus stays inside.
+// Escape does nothing, because the visitor must answer; if a browser closes it anyway,
+// scripts/shell.ts opens it again. “Yes” is remembered for 30 days. “No” shows the refusal and
+// leaves nothing behind it to reach; nothing is remembered, so a reload asks again.
+//
+// The page underneath renders normally, so the layer costs no time to the first paint. An inline
+// script in <head> marks <html class="age-pending"> when the answer is not stored, and the CSS
+// below covers the page from the first paint, before the script opens the dialog.
+import BrandMark from '../BrandMark.astro';
+import Button from '../Button.astro';
+import { microcopy } from '../../data/site.ts';
+
+const c = microcopy.ageGate;
+---
+
+<dialog class="gate" data-age-gate aria-labelledby="age-question">
+  <div class="inner">
+    <BrandMark mark="monogram" class="mono" />
+
+    <div class="ask" data-age-ask>
+      <p class="question" id="age-question">
+        {c.question}
+      </p>
+      <div class="actions">
+        <Button data-age-yes>{c.yes}</Button>
+        <Button variant="secondary" data-age-no>
+          {c.no}
+        </Button>
+      </div>
+    </div>
+
+    <p class="refusal" data-age-refusal tabindex="-1" role="alert" hidden>
+      {c.refused}
+    </p>
+  </div>
+</dialog>
+
+<style>
+  .gate {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-gate);
+    inline-size: 100%;
+    block-size: 100%;
+    overflow-y: auto;
+    place-items: center;
+  }
+
+  /* Open, or about to be: from the first paint while the answer is unknown. */
+  .gate[open],
+  :global(html.age-pending) .gate {
+    display: grid;
+  }
+
+  :global(html.age-pending) {
+    overflow: hidden;
+  }
+
+  .inner {
+    box-sizing: border-box;
+    display: grid;
+    gap: var(--space-48);
+    justify-items: center;
+    inline-size: min(100%, 40rem);
+    padding: var(--space-48) var(--margin);
+    text-align: center;
+  }
+
+  /* The monogram is the one gold mark on this screen. */
+  .inner :global(.mono) {
+    inline-size: 6rem;
+    color: var(--gold);
+  }
+
+  .ask {
+    display: grid;
+    gap: var(--space-32);
+    justify-items: center;
+    inline-size: 100%;
+  }
+
+  .question,
+  .refusal {
+    max-inline-size: 24rem;
+    font-family: var(--font-serif);
+    font-size: var(--fs-lead);
+    line-height: var(--lh-lead);
+    text-wrap: balance;
+  }
+
+  .actions {
+    display: grid;
+    gap: var(--space-16);
+    inline-size: 100%;
+  }
+
+  .actions :global(.btn) {
+    inline-size: 100%;
+  }
+
+  @media (min-width: 40rem) {
+    .actions {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  /* The refusal is not a control, so its focus ring would only be noise. */
+  .refusal:focus {
+    outline: none;
+  }
+
+  .gate[open] {
+    animation: gate-in var(--dur-base) var(--ease-out);
+  }
+
+  @keyframes gate-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .gate[open] {
+      animation-duration: var(--dur-reduced);
+    }
+  }
+</style>

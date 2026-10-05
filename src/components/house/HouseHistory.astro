@@ -1,0 +1,172 @@
+---
+// The long history of the house (blueprint 1.8): five chapters, the approved text word for word
+// from the house record. They are set as pages of a ledger, not as five cards: the
+// label type, a heading and the text, with a short book block where the record has real figures.
+//
+// Below 1024px each chapter is one column: heading, text, facts. From 1024px the chapters are
+// placed differently from each other (the beginning with its facts at the right, the second
+// chapter offset, the name in the larger serif, the first cigars at the right edge, today with its
+// facts) so the page reads as one long record and not as a repeated block. Everything is visible
+// without JavaScript, and nothing moves.
+import BookLine from '../BookLine.astro';
+import Container from '../Container.astro';
+
+interface Chapter {
+  id: string;
+  title: string;
+  /** Paragraphs; may carry <i lang="es"> and the [AREA] placeholder. */
+  paragraphs: readonly string[];
+  facts?: { label: string; value: string }[] | undefined;
+}
+
+interface Props {
+  chapters: Chapter[];
+}
+
+const { chapters } = Astro.props;
+---
+
+<div class="history">
+  {chapters.map((chapter) => (
+    <section class="chapter" data-chapter={chapter.id} aria-labelledby={`${chapter.id}-title`}>
+      <Container grid>
+        <h2 id={`${chapter.id}-title`}>{chapter.title}</h2>
+        <div class="body">
+          {chapter.paragraphs.map((p) => (
+            <p set:html={p} />
+          ))}
+        </div>
+        {chapter.facts && (
+          <div class="facts">
+            <BookLine rows={chapter.facts} />
+          </div>
+        )}
+      </Container>
+    </section>
+  ))}
+</div>
+
+<style>
+  .chapter {
+    padding-block: var(--space-48);
+  }
+
+  h2,
+  .body,
+  .facts {
+    grid-column: 1 / -1;
+    min-inline-size: 0;
+  }
+
+  h2 {
+    font-size: var(--fs-h2);
+    line-height: var(--lh-h2);
+    margin-block-end: var(--space-24);
+  }
+
+  .body {
+    display: grid;
+    gap: var(--space-16);
+    max-inline-size: var(--measure);
+    color: var(--text-2);
+  }
+
+  .facts {
+    margin-block-start: var(--space-24);
+  }
+
+  /* The name is the part the house is named after: set larger, in the serif. */
+  [data-chapter='the-name'] .body {
+    font-family: var(--font-serif);
+    font-size: var(--fs-lead);
+    line-height: var(--lh-lead);
+    color: var(--text);
+  }
+
+  @media (min-width: 40rem) {
+    .chapter {
+      padding-block: var(--space-64);
+    }
+
+    h2 {
+      grid-column: 3 / -1;
+    }
+
+    .body {
+      grid-column: 3 / span 5;
+    }
+
+    .facts {
+      grid-column: 3 / span 5;
+    }
+  }
+
+  /* From 1024px, five different placements on the 12 columns. */
+  @media (min-width: 64rem) {
+    .chapter {
+      padding-block: var(--space-96);
+    }
+
+    /* 01 The beginning: the number, the heading and text, the facts at the right. */
+    [data-chapter='the-beginning'] h2 {
+      grid-column: 3 / span 6;
+    }
+
+    [data-chapter='the-beginning'] .body {
+      grid-column: 3 / span 6;
+    }
+
+    [data-chapter='the-beginning'] .facts {
+      grid-column: 9 / -1;
+      grid-row: 2;
+      align-self: start;
+      margin-block-start: 0;
+    }
+
+    /* 02 Leaf before cigars: the heading on the left, the text offset to the right. */
+    [data-chapter='leaf-before-cigars'] h2 {
+      grid-column: 1 / span 5;
+      grid-row: 1;
+    }
+
+    [data-chapter='leaf-before-cigars'] .body {
+      grid-column: 6 / span 6;
+      grid-row: 1 / span 2;
+    }
+
+    /* 03 The name: a wide, larger passage in the middle. */
+    [data-chapter='the-name'] h2 {
+      grid-column: 3 / span 8;
+    }
+
+    [data-chapter='the-name'] .body {
+      grid-column: 3 / span 8;
+      max-inline-size: 38ch;
+    }
+
+    /* 04 The first cigars: at the right edge. */
+    [data-chapter='the-first-cigars'] h2 {
+      grid-column: 8 / -1;
+    }
+
+    [data-chapter='the-first-cigars'] .body {
+      grid-column: 8 / -1;
+    }
+
+    /* 05 Today: the text at the left, the facts at the right. */
+    [data-chapter='today'] h2 {
+      grid-column: 1 / span 6;
+    }
+
+    [data-chapter='today'] .body {
+      grid-column: 1 / span 6;
+    }
+
+    [data-chapter='today'] .facts {
+      grid-column: 8 / -1;
+      grid-row: 2;
+      align-self: start;
+      margin-block-start: 0;
+    }
+  }
+</style>

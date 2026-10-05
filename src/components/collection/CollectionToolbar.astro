@@ -1,0 +1,231 @@
+---
+// The collection toolbar (blueprint 4.4): 56px, sticky under the header. On the left the view
+// switcher (By line / All), in the middle the filters (from 1024px), on the right Sort. Below
+// 1024px the middle is a single “Filters” button that opens the panel.
+//
+// It sticks at `--header-offset`, which scripts/shell.ts keeps equal to the visible height of
+// the header (72px, 64px compact, 0 while the header is away), and follows it with the same
+// 250ms. The toolbar's own height never changes, so nothing under it moves.
+//
+// Without JavaScript the toolbar is not shown: it would do nothing. A row of links to the
+// lines takes its place (see the page).
+import Container from '../Container.astro';
+import FilterGroups from './FilterGroups.astro';
+import { microcopy } from '../../data/site.ts';
+import { SORT_OPTIONS } from '../../data/taxonomy.ts';
+import type { FilterGroup, Item } from '../../lib/collection.ts';
+
+interface Props {
+  groups: FilterGroup[];
+  items: Item[];
+}
+
+const { groups, items } = Astro.props;
+const t = microcopy.filters;
+---
+
+<div
+  class="toolbar"
+  data-toolbar
+  role="group"
+  aria-label={`${t.view}, ${t.title.toLowerCase()} and ${t.sort.toLowerCase()}`}
+>
+  <Container class="inner">
+    <div class="views" role="group" aria-label={t.view}>
+      <button class="view" type="button" aria-pressed="true" data-view="line">
+        {t.byLine}
+      </button>
+      <button class="view" type="button" aria-pressed="false" data-view="all">
+        {t.all}
+      </button>
+    </div>
+
+    <div class="filters" data-groups-slot="toolbar">
+      <FilterGroups {groups} {items} />
+    </div>
+
+    <button
+      class="open-filters"
+      type="button"
+      aria-haspopup="dialog"
+      aria-expanded="false"
+      data-filters-open
+    >
+      <span data-filters-open-label>{t.title}</span>
+    </button>
+
+    <div class="sort">
+      <label class="sort-label" for="collection-sort">
+        {t.sort}
+      </label>
+      <span class="select">
+        <select id="collection-sort" name="sort" data-sort>
+          {SORT_OPTIONS.map((o) => (
+            <option value={o.id}>{o.label}</option>
+          ))}
+        </select>
+        <span class="chevron" aria-hidden="true"></span>
+      </span>
+    </div>
+  </Container>
+</div>
+
+<style>
+  .toolbar {
+    position: sticky;
+    inset-block-start: var(--header-offset);
+    z-index: var(--z-toolbar);
+    block-size: var(--toolbar-h);
+    background: var(--bg);
+    border-block-end: var(--line) solid var(--rule);
+    transition: inset-block-start var(--dur-base) var(--ease-out);
+  }
+
+  :global(html:not(.js)) .toolbar {
+    display: none;
+  }
+
+  .toolbar :global(.inner) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-8);
+    block-size: 100%;
+  }
+
+  /* The view switcher: two text buttons; the current one is underlined, so it is told by
+     more than colour. */
+  .views {
+    display: flex;
+    flex: none;
+    gap: 0;
+  }
+
+  .view {
+    display: inline-flex;
+    align-items: center;
+    min-inline-size: var(--target);
+    min-block-size: var(--target);
+    padding-inline: var(--space-8);
+    justify-content: center;
+    font-size: var(--fs-small);
+    line-height: 1;
+    color: var(--text-2);
+  }
+
+  .view:first-child {
+    margin-inline-start: calc(-1 * var(--space-8));
+  }
+
+  .view[aria-pressed='true'] {
+    color: var(--text);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 6px;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .view:hover {
+      color: var(--text);
+    }
+  }
+
+  /* The filters: a button below 1024px, the groups themselves from 1024px. */
+  .filters {
+    display: none;
+  }
+
+  .open-filters {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    min-block-size: var(--target);
+    padding-inline: var(--space-8);
+    margin-inline: auto var(--space-8);
+    font-size: var(--fs-small);
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .sort {
+    display: flex;
+    flex: 0 1 auto;
+    align-items: center;
+    gap: var(--space-8);
+    min-inline-size: 0;
+  }
+
+  .sort-label {
+    flex: none;
+    font-size: var(--fs-small);
+    line-height: 1;
+    color: var(--text-3);
+  }
+
+  .select {
+    position: relative;
+    display: grid;
+    min-inline-size: 0;
+  }
+
+  select {
+    box-sizing: border-box;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    block-size: var(--target);
+    padding-inline: var(--space-8) 1.5rem;
+    background: none;
+    border: 0;
+    border-radius: 0;
+    font-size: var(--fs-small);
+    line-height: 1;
+    color: var(--text);
+    text-overflow: ellipsis;
+    appearance: none;
+    cursor: pointer;
+  }
+
+  select option {
+    background: var(--surface);
+    color: var(--text);
+  }
+
+  .select .chevron {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-end: var(--space-8);
+    inline-size: 0.5rem;
+    block-size: 0.5rem;
+    border-inline-end: var(--line) solid currentColor;
+    border-block-end: var(--line) solid currentColor;
+    transform: translateY(-75%) rotate(45deg);
+    pointer-events: none;
+  }
+
+  @media (min-width: 40rem) {
+    .open-filters {
+      margin-inline-end: var(--space-24);
+    }
+  }
+
+  @media (min-width: 64rem) {
+    /* Anchored on the left of its space, not centred: a count appearing on one group moves
+       only the groups after it, and the panel that is open under it stays where it is. */
+    .filters {
+      display: block;
+      flex: 1;
+      min-inline-size: 0;
+      padding-inline-start: var(--space-32);
+    }
+
+    .open-filters {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .toolbar {
+      transition: none;
+    }
+  }
+</style>

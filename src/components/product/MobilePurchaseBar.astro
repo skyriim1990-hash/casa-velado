@@ -1,0 +1,111 @@
+---
+// The purchase bar under 640px (blueprint 4.6, 11): a thin strip fixed to the bottom with the name,
+// the chosen price and “Add”. It shows only once the main “Add to cart” button has scrolled out
+// of the screen upwards, and goes again when that button is back in view or the footer is
+// reached. src/scripts/product.ts decides, with IntersectionObserver, and keeps the price
+// and the quantity the same as the main button's. It does not exist from 640px, and without
+// JavaScript it is never shown.
+import Button from '../Button.astro';
+import { microcopy } from '../../data/site.ts';
+import { fill } from '../../lib/format.ts';
+
+interface Props {
+  name: string;
+  price: string;
+}
+
+const { name, price } = Astro.props;
+---
+
+<div class="bar" data-buybar>
+  <p class="name">{name}</p>
+  <p class="price" data-bar-price>
+    {price}
+  </p>
+  <Button
+    type="button"
+    class="add"
+    data-bar-add
+    aria-label={fill(microcopy.product.addFor, { name })}
+  >
+    <span data-bar-label>{microcopy.product.addShort}</span>
+  </Button>
+</div>
+
+<style>
+  .bar {
+    position: fixed;
+    inset-inline: 0;
+    inset-block-end: 0;
+    z-index: var(--z-toolbar);
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: var(--space-4) var(--space-16);
+    padding: var(--space-8) var(--margin);
+    padding-block-end: calc(var(--space-8) + env(safe-area-inset-bottom, 0px));
+    background: var(--bg);
+    border-top: var(--line) solid var(--rule);
+    /* Hidden until the script shows it: out of sight, out of reach of the keyboard. */
+    transform: translateY(100%);
+    visibility: hidden;
+    transition:
+      transform var(--dur-base) var(--ease-out),
+      visibility 0s linear var(--dur-base);
+  }
+
+  .bar[data-visible] {
+    transform: none;
+    visibility: visible;
+    transition-delay: 0s;
+  }
+
+  :global(html:not(.js)) .bar {
+    display: none;
+  }
+
+  @media (min-width: 40rem) {
+    .bar {
+      display: none;
+    }
+  }
+
+  .name {
+    overflow: hidden;
+    font-family: var(--font-serif);
+    font-size: var(--fs-h4);
+    font-weight: var(--fw-medium);
+    line-height: var(--lh-h4);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .price {
+    font-size: var(--fs-ui);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* A button on its own is full width on a phone; in the bar it is as wide as its word. */
+  .bar :global(.add) {
+    inline-size: auto;
+    min-inline-size: 5rem;
+    padding-inline: var(--space-24);
+  }
+
+  /* Reduced motion: it fades in 100ms instead of sliding. */
+  @media (prefers-reduced-motion: reduce) {
+    .bar {
+      transform: none;
+      opacity: 0;
+      transition:
+        opacity var(--dur-reduced) linear,
+        visibility 0s linear var(--dur-reduced);
+    }
+
+    .bar[data-visible] {
+      opacity: 1;
+    }
+  }
+</style>

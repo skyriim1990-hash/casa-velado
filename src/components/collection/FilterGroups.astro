@@ -1,0 +1,192 @@
+---
+// The five filter groups, written once (blueprint 4.4, 7.3). Each group is a button that opens
+// its values: as a 280px panel under the button from 1024px, and as a collapsible section
+// inside the filter panel below 1024px. The script moves this one element between the toolbar
+// and the panel when the window crosses 1024px, so there is a single set of checkboxes.
+//
+// A value shows how many cigars it would give; one that would give none is dimmed and cannot
+// be chosen (it stays in the list). Nothing here is visible without JavaScript.
+import Checkbox from '../Checkbox.astro';
+import { microcopy } from '../../data/site.ts';
+import { countFor, emptySelection, type FilterGroup, type Item } from '../../lib/collection.ts';
+
+interface Props {
+  groups: FilterGroup[];
+  items: Item[];
+}
+
+const { groups, items } = Astro.props;
+const none = emptySelection();
+---
+
+<div class="groups" data-groups data-mode="popover">
+  {groups.map((group) => (
+    <div class="group" data-group={group.id}>
+      <button
+        class="trigger"
+        type="button"
+        aria-expanded="false"
+        aria-controls={`filter-${group.id}`}
+        data-group-trigger={group.id}
+      >
+        <span class="trigger-label">{group.label}</span>
+        <span class="trigger-selected" data-selected />
+        <span class="chevron" aria-hidden="true" />
+      </button>
+      <div class="panel" id={`filter-${group.id}`} hidden>
+        <fieldset>
+          <legend class="legend">{group.label}</legend>
+          {group.values.map((value) => {
+            const count = countFor(items, none, group.id, value.id);
+            return (
+              <Checkbox
+                id={`filter-${group.id}-${value.id}`}
+                name={group.id}
+                value={value.id}
+                label={value.label}
+                {count}
+                countUnit={count === 1 ? microcopy.filters.cigarWord : microcopy.filters.cigarsWord}
+                disabled={count === 0}
+                data-filter=""
+                data-group-id={group.id}
+              />
+            );
+          })}
+        </fieldset>
+      </div>
+    </div>
+  ))}
+</div>
+
+<style>
+  .groups {
+    display: none;
+  }
+
+  .group {
+    position: relative;
+  }
+
+  .trigger {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    inline-size: 100%;
+    min-block-size: var(--target);
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--text-2);
+    text-align: start;
+  }
+
+  .trigger[aria-expanded='true'],
+  .trigger:has(.trigger-selected:not(:empty)) {
+    color: var(--text);
+  }
+
+  .trigger-selected:not(:empty) {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .trigger-selected:not(:empty)::before {
+    content: '(';
+  }
+
+  .trigger-selected:not(:empty)::after {
+    content: ')';
+  }
+
+  /* A chevron drawn with two borders: a 1px line, like the select's. */
+  .chevron {
+    flex: none;
+    inline-size: 0.5rem;
+    block-size: 0.5rem;
+    margin-inline-start: auto;
+    border-inline-end: var(--line) solid currentColor;
+    border-block-end: var(--line) solid currentColor;
+    transform: translateY(-25%) rotate(45deg);
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+
+  .trigger[aria-expanded='true'] .chevron {
+    transform: translateY(25%) rotate(-135deg);
+  }
+
+  .legend {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* ── In the toolbar, from 1024px: a row of buttons, a panel under each ──────────────── */
+  @media (min-width: 64rem) {
+    .groups {
+      display: flex;
+      align-items: center;
+      gap: var(--space-24);
+    }
+
+    .trigger {
+      inline-size: auto;
+    }
+
+    .chevron {
+      margin-inline-start: var(--space-4);
+    }
+
+    .panel {
+      position: absolute;
+      inset-block-start: 100%;
+      inset-inline-start: calc(-1 * var(--space-16));
+      z-index: var(--z-toolbar);
+      box-sizing: border-box;
+      inline-size: 17.5rem; /* 280px */
+      max-block-size: calc(100dvh - var(--header-h) - var(--toolbar-h) - var(--space-16));
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: var(--space-8) var(--space-16);
+      background: var(--surface);
+      border: var(--line) solid var(--border);
+    }
+  }
+
+  /* ── Inside the filter panel, below 1024px: the groups are sections one under another ── */
+  .groups[data-mode='drawer'] {
+    display: block;
+  }
+
+  .groups[data-mode='drawer'] .group {
+    border-block-end: var(--line) solid var(--rule);
+  }
+
+  .groups[data-mode='drawer'] .trigger {
+    inline-size: 100%;
+    padding-block: var(--space-8);
+    font-size: var(--fs-ui);
+    line-height: var(--lh-ui);
+    color: var(--text);
+  }
+
+  .groups[data-mode='drawer'] .chevron {
+    margin-inline-start: auto;
+  }
+
+  .groups[data-mode='drawer'] .panel {
+    position: static;
+    inline-size: auto;
+    max-block-size: none;
+    overflow: visible;
+    padding: 0 0 var(--space-16);
+    border: 0;
+    background: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .chevron {
+      transition: none;
+    }
+  }
+</style>

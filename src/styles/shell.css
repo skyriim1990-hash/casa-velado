@@ -1,0 +1,50 @@
+/* Page-level rules the shell needs and no single component owns (blueprint 5.4, 7.3, 8). */
+
+html {
+  /* Reserve the scrollbar's space, so opening a panel never shifts the page sideways. */
+  scrollbar-gutter: stable;
+
+  /* Where sticky elements (the collection toolbar, Stage 7) start: under the header while it
+     shows, at the top edge while it is hidden. scripts/shell.ts sets data-header. */
+  --header-offset: var(--header-h);
+}
+
+html[data-header='solid'] {
+  --header-offset: var(--header-h-compact);
+}
+
+html[data-header='hidden'] {
+  --header-offset: 0px;
+}
+
+/* A panel is open: the page behind does not scroll. */
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+
+/* The header is fixed, so the page starts below it. Over a hero it starts at the top edge. */
+body {
+  display: flex;
+  flex-direction: column;
+  padding-block-start: var(--header-h);
+}
+
+body[data-header-mode='overlay'] {
+  padding-block-start: 0;
+}
+
+main {
+  flex: 1 0 auto;
+}
+
+/* The native <dialog> carries browser styles; the shell's panels start from nothing. */
+dialog {
+  box-sizing: border-box;
+  max-inline-size: none;
+  max-block-size: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--bg);
+  color: var(--text);
+}

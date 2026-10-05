@@ -1,0 +1,401 @@
+---
+// The product page (blueprint 2.1, 4.6): one template for all 16 items of the catalogue, at
+// /cigars/[line]-[vitola] (the Muestrario is /cigars/muestrario). In order: the breadcrumbs, the
+// gallery and the purchase block, tasting notes by thirds, the ledger on paper, the pairing, the
+// other sizes of the line, and one article from the journal if one is tied to the cigar.
+//
+// The page is static HTML. The facts are read from the catalogue; nothing is written here. The
+// script (src/scripts/product.ts) only works on what is already in the page: the gallery, the
+// price in the button, the limit on the stepper, the add and the bar for phones.
+import Base from '../../layouts/Base.astro';
+import ArticleCard from '../../components/ArticleCard.astro';
+import BookLine from '../../components/BookLine.astro';
+import Container from '../../components/Container.astro';
+import MobilePurchaseBar from '../../components/product/MobilePurchaseBar.astro';
+import ProductGallery from '../../components/product/ProductGallery.astro';
+import ProductPurchase from '../../components/product/ProductPurchase.astro';
+import ProductTaste from '../../components/product/ProductTaste.astro';
+import RelatedFormats from '../../components/product/RelatedFormats.astro';
+import { microcopy } from '../../data/site.ts';
+import {
+  getArticles,
+  getLine,
+  getProduct,
+  getProductLedger,
+  getProducts,
+  getSameLineProducts,
+} from '../../lib/catalogue.ts';
+import { formatPrice, optionLabel } from '../../lib/format.ts';
+import { DESCRIPTION_MAX, absoluteUrl } from '../../lib/site.ts';
+import type { CigarProduct } from '../../lib/schemas.ts';
+
+export async function getStaticPaths() {
+  const products = await getProducts();
+  return products.map((product) => ({ params: { id: product.id } }));
+}
+
+const { id } = Astro.params;
+const product = await getProduct(id);
+const line = await getLine(product.line);
+const p = microcopy.product;
+
+const name = product.kind === 'cigar' ? `${line.name} ${product.vitola}` : line.name;
+const cigar: CigarProduct | undefined = product.kind === 'cigar' ? product : undefined;
+
+const [ledger, sameLine, all, articles] = await Promise.all([
+  getProductLedger(product),
+  getSameLineProducts(product),
+  getProducts(),
+  getArticles(),
+]);
+const otherSizes = sameLine.filter((x): x is CigarProduct => x.kind === 'cigar');
+const scaleMm = Math.max(...all.flatMap((x) => (x.kind === 'cigar' ? [x.lengthMm] : [])));
+const related = articles.find((a) => a.data.relatedProduct === product.id);
+
+const images = cigar
+  ? [
+      cigar.images.catalog,
+      cigar.images.band,
+      cigar.images.foot,
+      cigar.images.box,
+      ...(cigar.images.context ? [cigar.images.context] : []),
+    ]
+  : product.kind === 'sampler'
+    ? [product.images.catalog, product.images.box]
+    : [];
+
+const first = product.options[0];
+if (!first) throw new Error(`Product “${product.id}” has no option`);
+const soldOut = product.availability === 'sold_out';
+
+// The meta description: as many whole sentences of the product's own as fit in 155 characters.
+const sentences = product.description.match(/[^.]+\.(?:\s|$)/g)?.map((s) => s.trim()) ?? [
+  product.description,
+];
+let description = '';
+for (const sentence of sentences) {
+  const next = description ? `${description} ${sentence}` : sentence;
+  if (next.length > DESCRIPTION_MAX) break;
+  description = next;
+}
+if (!description) description = `${name}. ${product.description}`.slice(0, DESCRIPTION_MAX);
+
+// Structured data (blueprint 9.2): Product with an Offer per format, and the breadcrumbs.
+// No Review and no AggregateRating: there are no reviews.
+const stock = {
+  in_stock: 'https://schema.org/InStock',
+  low: 'https://schema.org/LimitedAvailability',
+  limited: 'https://schema.org/LimitedAvailability',
+  sold_out: 'https://schema.org/OutOfStock',
+} as const;
+const url = absoluteUrl(Astro.url.pathname, Astro.site);
+const crumbs = [
+  { name: p.cigars, href: '/cigars' },
+  ...(cigar ? [{ name: line.name, href: `/cigars#${line.id}` }] : []),
+  { name: cigar ? cigar.vitola : name, href: undefined },
+];
+const productLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name,
+  description: product.description,
+  brand: { '@type': 'Brand', name: 'Casa Velado' },
+  ...(url ? { url } : {}),
+  offers: product.options.map((o) => ({
+    '@type': 'Offer',
+    name: optionLabel(o, product, line.kind === 'edition'),
+    priceCurrency: 'EUR',
+    price: (o.priceCents / 100).toFixed(2),
+    availability: stock[product.availability],
+  })),
+};
+const breadcrumbLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: crumbs.map((crumb, i) => {
+    // A line has no page of its own, only a place on /cigars, so it is listed by name alone.
+    const item = crumb.href === '/cigars' ? absoluteUrl('/cigars', Astro.site) : undefined;
+    return { '@type': 'ListItem', position: i + 1, name: crumb.name, ...(item ? { item } : {}) };
+  }),
+};
+const ld = (data: object) => JSON.stringify(data).replaceAll('<', '\\u003c');
+---
+
+<Base title={name} description={description}>
+  <script slot="head" type="application/ld+json" set:html={ld(productLd)} />
+  <script slot="head" type="application/ld+json" set:html={ld(breadcrumbLd)} />
+  <nav class="crumbs" aria-label={p.breadcrumbs}>
+    <Container>
+      <ol>
+        {crumbs.map((crumb) => (
+          <li>
+            {crumb.href ? (
+              <a href={crumb.href}>{crumb.name}</a>
+            ) : (
+              <span aria-current="page">{crumb.name}</span>
+            )}
+          </li>
+        ))}
+      </ol>
+    </Container>
+  </nav>
+
+  <Container>
+    <div class="top">
+      <div class="media">
+        <ProductGallery images={images} />
+      </div>
+      <div class="aside">
+        <ProductPurchase {product} {line} {name} />
+      </div>
+    </div>
+  </Container>
+
+  {cigar && (
+    <section class="taste" aria-labelledby="taste-title">
+      <Container>
+        <h2 id="taste-title">{p.tasting}</h2>
+        <ProductTaste notes={cigar.notes} />
+      </Container>
+    </section>
+  )}
+
+  <section class="ledger" data-surface="paper" aria-labelledby="ledger-title">
+    <Container>
+      <div class="ledger-grid">
+        <h2 id="ledger-title">{p.ledger}</h2>
+        <div class="ledger-rows">
+          <BookLine rows={ledger.map((row) => ({ ...row, html: true }))} />
+        </div>
+      </div>
+    </Container>
+  </section>
+
+  {cigar && (
+    <section class="pairing" aria-labelledby="pairing-title">
+      <Container>
+        <div class="pairing-grid">
+          <h2 id="pairing-title">{p.pairing}</h2>
+          <p class="pairing-text">{cigar.pairing}</p>
+        </div>
+      </Container>
+    </section>
+  )}
+
+  {cigar && line.kind !== 'sampler' && otherSizes.length > 0 && (
+    <section class="sizes" aria-labelledby="sizes-title">
+      <Container>
+        <h2 id="sizes-title">{p.sameLine}</h2>
+        <RelatedFormats products={otherSizes} strength={line.strength} {scaleMm} />
+      </Container>
+    </section>
+  )}
+
+  {related && (
+    <section class="journal" aria-labelledby="journal-title">
+      <Container>
+        <h2 id="journal-title">{p.journal}</h2>
+        <div class="journal-card">
+          <ArticleCard id={related.id} article={related.data} variant="small" />
+        </div>
+      </Container>
+    </section>
+  )}
+
+  {!soldOut && <MobilePurchaseBar {name} price={formatPrice(first.priceCents)} />}
+</Base>
+
+<script>
+  import '../../scripts/product.ts';
+</script>
+
+<style>
+  /* ── Breadcrumbs: Cigars / Galera / Robusto ── */
+  .crumbs {
+    padding-block-start: var(--space-8);
+  }
+
+  .crumbs ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 0;
+    list-style: none;
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+  }
+
+  .crumbs li {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .crumbs li + li::before {
+    content: '/' / '';
+    margin-inline: var(--space-8);
+    color: var(--text-3);
+  }
+
+  .crumbs a,
+  .crumbs [aria-current] {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--target);
+  }
+
+  .crumbs [aria-current] {
+    color: var(--text-2);
+  }
+
+  /* ── The gallery and the purchase block ── */
+  .top {
+    display: grid;
+    gap: var(--space-24);
+    padding-block-end: var(--space-48);
+  }
+
+  /* Below 1024px the strip runs from edge to edge of the screen. */
+  .media {
+    min-inline-size: 0;
+    margin-inline: calc(-1 * var(--margin));
+  }
+
+  .aside {
+    min-inline-size: 0;
+  }
+
+  @media (min-width: 64rem) {
+    .top {
+      grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+      column-gap: var(--gutter);
+      align-items: start;
+      padding-block-end: var(--space-96);
+    }
+
+    .media {
+      grid-column: 1 / span 7;
+      margin-inline: 0;
+    }
+
+    .aside {
+      grid-column: 9 / span 4;
+    }
+  }
+
+  /* Kept in view beside the gallery while the page scrolls past it, but only where the whole
+     block fits in the window: taller than the window, a stuck block would hide its button. */
+  @media (min-width: 64rem) and (min-height: 50rem) {
+    .aside {
+      position: sticky;
+      inset-block-start: calc(var(--header-offset) + var(--space-24));
+    }
+  }
+
+  /* ── The sections, each its own density ── */
+  h2 {
+    font-size: var(--fs-h3);
+    line-height: var(--lh-h3);
+  }
+
+  .taste {
+    padding-block: var(--space-48) var(--space-64);
+  }
+
+  .taste h2 {
+    margin-block-end: var(--space-32);
+  }
+
+  .ledger {
+    padding-block: var(--space-64);
+  }
+
+  .ledger-grid {
+    display: grid;
+    gap: var(--space-24);
+  }
+
+  .pairing {
+    padding-block: var(--space-64);
+  }
+
+  .pairing-grid {
+    display: grid;
+    gap: var(--space-16);
+  }
+
+  .pairing-text {
+    max-inline-size: 28ch;
+    font-family: var(--font-serif);
+    font-size: var(--fs-h3);
+    line-height: var(--lh-h3);
+  }
+
+  .sizes {
+    padding-block: var(--space-32) var(--space-96);
+  }
+
+  .sizes h2 {
+    margin-block-end: var(--space-24);
+  }
+
+  .journal {
+    padding-block-end: var(--space-96);
+  }
+
+  .journal h2 {
+    margin-block-end: var(--space-24);
+  }
+
+  .journal-card {
+    max-inline-size: 32rem;
+  }
+
+  @media (min-width: 40rem) {
+    .taste {
+      padding-block: var(--space-64) var(--space-96);
+    }
+
+    .ledger {
+      padding-block: var(--space-96);
+    }
+
+    .ledger-grid,
+    .pairing-grid {
+      grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+      column-gap: var(--gutter);
+      align-items: start;
+    }
+
+    .ledger-grid h2,
+    .pairing-grid h2 {
+      grid-column: 1 / span 3;
+    }
+
+    .ledger-rows {
+      grid-column: 4 / -1;
+    }
+
+    .pairing-text {
+      grid-column: 4 / -1;
+    }
+
+    .pairing {
+      padding-block: var(--space-96);
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .ledger-grid h2,
+    .pairing-grid h2 {
+      grid-column: 1 / span 4;
+    }
+
+    .ledger-rows {
+      grid-column: 6 / span 7;
+    }
+
+    .pairing-text {
+      grid-column: 6 / span 7;
+    }
+  }
+</style>

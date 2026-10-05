@@ -1,0 +1,39 @@
+---
+// Page frame (blueprint 5.3). Side margins and the 12/8/4-column grid come from tokens;
+// content stops at --w-wide, while full-bleed media can sit outside this element.
+interface Props {
+  /** Maximum content width. */
+  width?: 'wide' | 'content' | 'text';
+  /** Lay children out on the column grid. */
+  grid?: boolean;
+  as?: 'div' | 'section' | 'header' | 'footer' | 'article' | 'nav';
+  class?: string;
+}
+
+const { width = 'wide', grid = false, as: Tag = 'div', class: className } = Astro.props;
+---
+
+<Tag class:list={['container', `container--${width}`, { 'container--grid': grid }, className]}>
+  <slot />
+</Tag>
+
+<style>
+  .container {
+    margin-inline: auto;
+    width: min(100% - 2 * var(--margin), var(--w-wide));
+  }
+
+  .container--content {
+    width: min(100% - 2 * var(--margin), var(--w-content));
+  }
+
+  .container--text {
+    width: min(100% - 2 * var(--margin), var(--w-text));
+  }
+
+  .container--grid {
+    display: grid;
+    grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+    column-gap: var(--gutter);
+  }
+</style>

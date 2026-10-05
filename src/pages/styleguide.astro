@@ -1,0 +1,2402 @@
+---
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+// /styleguide: the Gate A review page (blueprint 2.1, 10.3). Not linked from the site,
+// `noindex`, absent from the sitemap. Stage 2 covers colour, type, space, lines, focus
+// and motion. Brand assets (Stage 3) and components (Stage 6) are added to this page.
+import tokensCss from '../styles/tokens.css?raw';
+import Base from '../layouts/Base.astro';
+import Container from '../components/Container.astro';
+import Label from '../components/Label.astro';
+import BrandMark from '../components/BrandMark.astro';
+import Section from '../components/styleguide/Section.astro';
+import Components from '../components/styleguide/Components.astro';
+import { contrast, formatRatio, grade, readHexTokens, readTokenValues } from '../lib/contrast';
+
+const hex = readHexTokens(tokensCss);
+const motion = readTokenValues(tokensCss, 'dur-');
+const easing = readTokenValues(tokensCss, 'ease-');
+
+const swatchGroups = [
+  {
+    title: 'Dark: the base',
+    surface: 'dark',
+    items: [
+      ['bg', 'Page background. Warm black, never pure black.'],
+      ['surface', 'Drawers and blocks.'],
+      ['surface-2', 'Product photo ground and photo placeholders.'],
+      ['text', 'Body text, ivory.'],
+      ['text-2', 'Secondary text.'],
+      ['text-3', 'Labels and notes. Not on --surface-2.'],
+      ['rule', 'Book-line rules. They carry no information.'],
+      ['border', 'Field and button outlines.'],
+    ],
+  },
+  {
+    title: 'Paper: reading, ledger, Cosecha',
+    surface: 'dark',
+    items: [
+      ['paper', 'Background of light sections.'],
+      ['ink', 'Text on paper.'],
+      ['ink-2', 'Secondary text, labels and outlines on paper.'],
+      ['paper-rule', 'Book-line rules on paper.'],
+    ],
+  },
+  {
+    title: 'Accent and states',
+    surface: 'dark',
+    items: [
+      ['gold', 'On dark only. A trace: active nav line, monogram, small marks.'],
+      ['gold-ink', 'Gold on paper.'],
+      ['text-hover', 'Primary button hover.'],
+      ['error', 'Always with text, never colour alone.'],
+      ['success', 'Always with text, never colour alone.'],
+    ],
+  },
+] as const;
+
+// [foreground, background, ratio stated in the blueprint (5.1), where it is used]
+const pairs: [string, string, number | null, string][] = [
+  ['text', 'bg', 15.1, 'Body text'],
+  ['text-2', 'bg', 8.6, 'Secondary text'],
+  ['text-3', 'bg', 4.9, 'Labels, notes'],
+  ['text-3', 'surface', 4.6, 'Labels on drawers and blocks'],
+  ['text-3', 'surface-2', 4.0, 'Not allowed: product photo ground'],
+  ['text-2', 'surface-2', null, 'Photo placeholder text'],
+  ['border', 'bg', 3.3, 'Field and button outlines (WCAG 1.4.11)'],
+  ['gold', 'bg', 6.1, 'Small marks only, not long text'],
+  ['error', 'bg', 6.0, 'Error text'],
+  ['success', 'bg', 7.3, 'Confirmation text'],
+  ['bg', 'text', null, 'Primary button label'],
+  ['bg', 'text-hover', null, 'Primary button label, hover'],
+  ['ink', 'paper', 13.4, 'Text on paper'],
+  ['ink-2', 'paper', 5.7, 'Labels and outlines on paper'],
+  ['gold-ink', 'paper', 4.8, 'Gold on paper'],
+];
+
+const rows = pairs.map(([fg, bg, stated, use]) => {
+  const ratio = contrast(hex[fg] ?? '#000000', hex[bg] ?? '#ffffff');
+  return {
+    fg,
+    bg,
+    use,
+    ratio: formatRatio(ratio),
+    grade: grade(ratio),
+    stated: stated === null ? '—' : formatRatio(stated),
+    agrees: stated === null ? null : Math.abs(ratio - stated) < 0.06,
+  };
+});
+
+const spaces = [4, 8, 12, 16, 24, 32, 48, 64, 96, 128, 160];
+
+const roles = [
+  {
+    key: 'display',
+    name: 'Display',
+    range: '44 → 96 px',
+    face: 'Casa Serif',
+    weight: '400',
+    lh: '1.02',
+    note: 'Once on the site: the home hero.',
+  },
+  {
+    key: 'h1',
+    name: 'H1',
+    range: '36 → 64 px',
+    face: 'Casa Serif',
+    weight: '400',
+    lh: '1.08',
+    note: '',
+  },
+  {
+    key: 'h2',
+    name: 'H2',
+    range: '30 → 48 px',
+    face: 'Casa Serif',
+    weight: '400',
+    lh: '1.12',
+    note: '',
+  },
+  {
+    key: 'h3',
+    name: 'H3',
+    range: '22 → 30 px',
+    face: 'Casa Serif',
+    weight: '500',
+    lh: '1.2',
+    note: '',
+  },
+  {
+    key: 'h4',
+    name: 'H4',
+    range: '19 → 22 px',
+    face: 'Casa Serif',
+    weight: '500',
+    lh: '1.3',
+    note: '',
+  },
+  {
+    key: 'lead',
+    name: 'Lead',
+    range: '20 → 24 px',
+    face: 'Casa Serif',
+    weight: '400',
+    lh: '1.45',
+    note: '',
+  },
+  {
+    key: 'article',
+    name: 'Article text',
+    range: '19 → 21 px',
+    face: 'Casa Serif',
+    weight: '400',
+    lh: '1.6',
+    note: 'Garamond has a small x-height.',
+  },
+  {
+    key: 'ui',
+    name: 'Interface text',
+    range: '16 → 17 px',
+    face: 'Casa Sans',
+    weight: '400',
+    lh: '1.55',
+    note: '',
+  },
+  {
+    key: 'small',
+    name: 'Small text',
+    range: '14 px',
+    face: 'Casa Sans',
+    weight: '400',
+    lh: '1.45',
+    note: '',
+  },
+  {
+    key: 'label',
+    name: 'Label',
+    range: '12 px',
+    face: 'Casa Sans',
+    weight: '500',
+    lh: '1.3',
+    note: 'Capitals, 0.1em tracking.',
+  },
+  {
+    key: 'button',
+    name: 'Button',
+    range: '15 px',
+    face: 'Casa Sans',
+    weight: '500',
+    lh: '1',
+    note: 'Sentence case.',
+  },
+] as const;
+
+const ledger = [
+  ['Jalapa', 'Petit Corona', '4½ × 42 (114 mm)', '~30 min', '€8.00'],
+  ['Galera', 'Robusto', '5 × 50 (127 mm)', '~55 min', '€11.00'],
+  ['Galera', 'Churchill', '7 × 48 (178 mm)', '~90 min', '€14.00'],
+  ['La Vela', 'Toro', '6 × 52 (152 mm)', '~75 min', '€19.00'],
+  ['Cosecha 2020', 'Toro', '6 × 50 (152 mm)', '~75 min', '€32.00'],
+];
+
+const breakpoints = [
+  ['mobile', 'Mobile', '< 640 px', '4', '16 px', '20 px', 'One column. Thumb at the bottom.'],
+  ['tablet', 'Tablet', '640–1023 px', '8', '24 px', '32 px', 'Two columns. No hover.'],
+  ['laptop', 'Laptop', '1024–1279 px', '12', '24 px', '48 px', 'Full navigation, sticky elements.'],
+  ['desktop', 'Desktop', '1280–1599 px', '12', '32 px', '64 px', 'Full grid, more air.'],
+  [
+    'wide',
+    'Wide',
+    '≥ 1600 px',
+    '12',
+    '32 px',
+    'auto',
+    'Content stops at 1440 px; photographs continue.',
+  ],
+] as const;
+
+const containers = [
+  ['--w-text', '680 px', 'Article and legal text'],
+  ['--w-content', '1200 px', 'Content pages'],
+  ['--w-wide', '1440 px', 'Widest content; full-bleed photographs go beyond it'],
+] as const;
+
+const durationUse: Record<string, string> = {
+  'dur-fast': 'Link underline, button background',
+  'dur-base': 'Menu panel, drawer',
+  'dur-slow': 'Hero text, scroll reveal',
+  'dur-image': 'Image fade-in, card hover, gallery, R3 preview, page transition',
+  'dur-story': 'R4 sticky narrative',
+  'dur-zoom': 'Article card image: the only image scale on the site',
+  'dur-reduced': 'Every overlay under prefers-reduced-motion',
+};
+
+// Brand review data. Everything numeric comes from src/brand/measurements.json, which
+// scripts/brand/build-brand.mjs writes while it draws the files.
+import measure from '../brand/measurements.json';
+
+const wm = measure.wordmark;
+const st = measure.stacked;
+const mo = measure.monogram;
+const mb = measure.bands;
+const fv = measure.favicon;
+const ti = measure.touchIcon;
+
+const dims = (v: readonly number[]) => ({ w: v[0] ?? 0, h: v[1] ?? 0 });
+const wmVB = dims(wm.viewBox);
+const stVB = dims(st.viewBox);
+const moVB = dims(mo.viewBox);
+const fvVB = dims(fv.viewBox);
+const tiVB = dims(ti.viewBox);
+
+const pct = (n: number) => `${Math.round(n * 100)}%`;
+const pct1 = (n: number) => `${(n * 100).toFixed(1)}%`;
+const signed = (n: number, withSign = true) =>
+  `${withSign ? (n > 0 ? '+' : n < 0 ? '−' : '') : ''}${Math.abs(n).toFixed(1)}`;
+const avgGap = wm.pairs.reduce((sum, p) => sum + p.final, 0) / wm.pairs.length;
+const monoShift = (mo.letters.top + mo.letters.base) / 2 - mo.cy;
+
+const ovalSize = (o: readonly number[] | undefined) =>
+  `${(o?.[0] ?? 0) * 2} × ${(o?.[1] ?? 0) * 2}`;
+const ovalWidth = (key: 'band-1987' | 'band-mid' | 'band-current') =>
+  (mb[key].ovals[0]?.[0] ?? 0) * 2;
+const lines = (n: number) => (n === 1 ? '1 line' : `${n} lines`);
+const describe = (key: 'band-1987' | 'band-mid' | 'band-current') => {
+  const b = mb[key];
+  return {
+    frame: `${lines(b.frames.length)}, ${b.frames.map((f) => f[1]).join(' and ')} thick`,
+    oval: `${lines(b.ovals.length)}, outer ${ovalSize(b.ovals[0])}, ${b.ovals.map((o) => o[2]).join(' and ')} thick`,
+    letters: `weight ${b.letters.wght}, tracking ${b.letters.tracking}em, ink ${b.letters.width} wide`,
+  };
+};
+const bandRows = [
+  {
+    mark: 'band-1987' as const,
+    step: 'Historical variant 1 of 3',
+    title: '1987: the first ring',
+    text: 'One rule round the strip, one line round the oval, open letters.',
+    alt: 'Band from 1987: a single frame, a single-line oval and open letters',
+    ...describe('band-1987'),
+  },
+  {
+    mark: 'band-mid' as const,
+    step: 'Historical variant 2 of 3',
+    title: '[YEAR]: the middle ring',
+    text: 'The year is for the owner to supply. The double line appears on the oval.',
+    alt: 'Band from the middle period: a single frame and a double-line oval',
+    ...describe('band-mid'),
+  },
+  {
+    mark: 'band-current' as const,
+    step: 'Current ring',
+    title: 'Today',
+    text: 'A double frame and a double-line oval: the seal of the monogram.',
+    alt: 'Current band: a double frame and a double-line oval',
+    ...describe('band-current'),
+  },
+];
+
+const minWidths = [240, 200, 160, 120] as const;
+
+// The ICO's three embedded PNGs, read from the shipped file and shown as data URIs
+// (nothing extra is written to dist/).
+const ico = readFileSync(join(process.cwd(), 'public/favicon.ico'));
+const icoEntries = Array.from({ length: ico.readUInt16LE(4) }, (_, i) => {
+  const at = 6 + i * 16;
+  const bytes = ico.readUInt32LE(at + 8);
+  const offset = ico.readUInt32LE(at + 12);
+  return {
+    size: ico.readUInt8(at) || 256,
+    bytes,
+    uri: `data:image/png;base64,${ico.subarray(offset, offset + bytes).toString('base64')}`,
+  };
+});
+---
+
+<Base
+  title="Styleguide"
+  description="Colour, type, space, lines, focus and motion for Casa Velado. An internal review page for a portfolio project."
+  noindex
+>
+  <header class="intro" data-surface="dark">
+    <Container>
+      <Label>Casa Velado · Styleguide · Gate A review</Label>
+      <h1>Styleguide</h1>
+      <p class="lead-in">
+        The rules the pages are built from. This version covers colour, type, brand marks, space,
+        lines, focus, motion and the core components. The page is not linked from the site and is
+        kept out of search.
+      </p>
+      <dl class="viewport">
+        <div>
+          <dt>Viewport</dt>
+          <dd>
+            <output data-viewport>—</output>
+          </dd>
+        </div>
+        <div>
+          <dt>Breakpoint</dt>
+          <dd>
+            <output data-breakpoint>—</output>
+          </dd>
+        </div>
+      </dl>
+      <nav aria-label="Styleguide sections">
+        <ul class="toc">
+          <li>
+            <a href="#principles">Principles</a>
+          </li>
+          <li>
+            <a href="#colour">Colour</a>
+          </li>
+          <li>
+            <a href="#type">Type</a>
+          </li>
+          <li>
+            <a href="#brand">Brand</a>
+          </li>
+          <li>
+            <a href="#space">Space</a>
+          </li>
+          <li>
+            <a href="#lines">Lines and surfaces</a>
+          </li>
+          <li>
+            <a href="#focus">Focus</a>
+          </li>
+          <li>
+            <a href="#motion">Motion</a>
+          </li>
+          <li>
+            <a href="#buttons">Buttons</a>
+          </li>
+          <li>
+            <a href="#links">Links</a>
+          </li>
+          <li>
+            <a href="#fields">Fields</a>
+          </li>
+          <li>
+            <a href="#badges">Badges</a>
+          </li>
+          <li>
+            <a href="#strength">Strength</a>
+          </li>
+          <li>
+            <a href="#bookline">Book line</a>
+          </li>
+          <li>
+            <a href="#product-card">Product card</a>
+          </li>
+          <li>
+            <a href="#article-card">Article card</a>
+          </li>
+          <li>
+            <a href="#photo">Photo and crops</a>
+          </li>
+        </ul>
+      </nav>
+    </Container>
+  </header>
+
+  <!-- Principles -->
+  <Section id="principles" label="01 · Principles" title="A small house that keeps a book">
+    <div class="principles">
+      <blockquote class="north-star">
+        <p class="lead">
+          Dark like the curing room at night. Light like a page from the harvest ledger. It speaks
+          through places, numbers, months, materials and process, never through inflated adjectives.
+        </p>
+        <p>
+          <i>Quiet confidence over visual excess.</i>
+        </p>
+      </blockquote>
+      <ul class="rules">
+        <li>Corners are square. The one exception is the 2 px checkbox.</li>
+        <li>No shadows, no glass, no decorative gradients.</li>
+        <li>Gold is a trace: at most one gold element on a screen, never a fill or a glow.</li>
+        <li>Headings are weight 400. Capitals with tracking belong to labels only.</li>
+        <li>The display size is used once on the site.</li>
+        <li>The book line appears only where there is real data to set in rows.</li>
+        <li>Motion explains a change. Only opacity and transform move.</li>
+      </ul>
+    </div>
+  </Section>
+
+  <!-- Colour -->
+  <Section id="colour" label="02 · Colour" title="Warm dark, paper, one trace of gold">
+    {swatchGroups.map((group) => (
+      <div class="group">
+        <h3>{group.title}</h3>
+        <ul class="swatches">
+          {group.items.map(([name, role]) => (
+            <li class="swatch">
+              <span class="chip" style={`background: var(--${name})`} aria-hidden="true" />
+              <code>--{name}</code>
+              <span class="hex">{hex[name]?.toUpperCase()}</span>
+              <span class="role">{role}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+
+    <div class="group">
+      <h3>Contrast</h3>
+      <p class="note">
+        Computed from the tokens when the site is built, not typed in. “Stated” is the ratio in the
+        blueprint; a difference is marked “(differs)”.
+      </p>
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Text on background</th>
+            <th scope="col" class="num">
+              Ratio
+            </th>
+            <th scope="col" class="num">
+              Stated
+            </th>
+            <th scope="col">Grade</th>
+            <th scope="col">Use</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr>
+              <td data-label="Pair">
+                <span>
+                  <code>--{row.fg}</code> on <code>--{row.bg}</code>
+                </span>
+              </td>
+              <td data-label="Ratio" class="num">
+                {row.ratio}
+              </td>
+              <td data-label="Stated" class="num">
+                {row.stated}
+                {row.agrees === false && ' (differs)'}
+              </td>
+              <td data-label="Grade">{row.grade}</td>
+              <td data-label="Use">{row.use}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="group">
+      <h3>Surface scope</h3>
+      <p class="note">
+        One attribute remaps the same token names. A component written with <code>--text</code> on
+        <code>--bg</code> is correct on both.
+      </p>
+      <div class="scopes">
+        <div class="scope" data-surface="dark">
+          <Label>data-surface="dark"</Label>
+          <p class="scope-title">Galera Robusto</p>
+          <p>Medium-bodied, even, about an hour.</p>
+        </div>
+        <div class="scope" data-surface="paper">
+          <Label>data-surface="paper"</Label>
+          <p class="scope-title">Galera Robusto</p>
+          <p>Medium-bodied, even, about an hour.</p>
+        </div>
+      </div>
+    </div>
+  </Section>
+
+  <!-- Type -->
+  <Section id="type" label="03 · Type" title="Garamond for the book, Plex for the data">
+    <div class="group">
+      <h3>Families</h3>
+      <div class="families">
+        <div class="family family--serif">
+          <Label>Serif · headings, lead, articles</Label>
+          <p class="family-name">Casa Serif</p>
+          <p class="family-meta">EB Garamond, variable 400–600, with italic.</p>
+          <p class="glyphs">Aa Bb Cc Dd Ee Ff Gg 0123456789 Í ó ñ “ ” ‘ ’ – × € ½ 5⅝</p>
+        </div>
+        <div class="family family--sans">
+          <Label>Sans · interface, data, labels</Label>
+          <p class="family-name">Casa Sans</p>
+          <p class="family-meta">IBM Plex Sans, 400 and 500. Tabular figures by default.</p>
+          <p class="glyphs">Aa Bb Cc Dd Ee Ff Gg 0123456789 Í ó ñ “ ” ‘ ’ – × € ½ 5⅝ → ✓</p>
+        </div>
+      </div>
+      <p class="note">
+        Both are self-hosted WOFF2, subset to Basic Latin, Latin-1 and Latin Extended-A. Fallbacks
+        are metric-matched, so the swap does not move the layout. Garamond has no ✓ glyph; the check
+        mark is set in Plex or drawn as an SVG.
+      </p>
+    </div>
+
+    <div class="group">
+      <h3>Scale</h3>
+      <p class="note">
+        Sizes are fluid between 360 px and 1600 px, then stop growing. “Now” is the size at this
+        viewport.
+      </p>
+      <ul class="scale">
+        {roles.map((role) => (
+          <li class="role-row">
+            <div class="role-meta">
+              <span class="role-name">{role.name}</span>
+              <span class="role-spec">
+                {role.face} {role.weight} · {role.range} · line {role.lh}
+              </span>
+              <span class="role-spec">
+                Now <output data-live={role.key}>—</output>
+                {role.note && ` · ${role.note}`}
+              </span>
+            </div>
+            <div class="role-sample" data-role={role.key}>
+              {role.key === 'display' && 'Tobacco, left to mature.'}
+              {role.key === 'h1' && 'Galera Robusto'}
+              {role.key === 'h2' && 'Four lines and one harvest a year.'}
+              {role.key === 'h3' && 'Robusto'}
+              {role.key === 'h4' && 'Second third'}
+              {role.key === 'lead' && (
+                <>
+                  <i lang="es">Velar</i> means to keep watch. During the curing season, someone
+                  stays in the <i lang="es">galera</i> through the night, opening and closing the
+                  doors as the air changes.
+                </>
+              )}
+              {role.key === 'article' &&
+                'The first cigars to carry our name were rolled for the family and for a few merchants who knew us. The orders grew; we stayed few. We decided not to grow faster than the tobacco allows.'}
+              {role.key === 'ui' &&
+                'Four permanent lines and one edition a year. Every cigar is rolled by hand in Estelí.'}
+              {role.key === 'small' &&
+                'Delivered within [TIMEFRAME] to [SHIPPING REGIONS]. Adults only.'}
+              {role.key === 'label' && 'Estelí, Nicaragua · Est. 1987'}
+              {role.key === 'button' && 'Add to cart · €11.00'}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <div class="group">
+      <h3>Figures</h3>
+      <p class="note">
+        Prices, sizes and times use tabular figures, so columns align. Currency is
+        <code>€11.00</code>, sizes <code>5 × 50 (127 mm)</code>, times <code>~55 min</code>.
+      </p>
+      <table class="table table--ledger">
+        <thead>
+          <tr>
+            <th scope="col">Line</th>
+            <th scope="col">Vitola</th>
+            <th scope="col">Size</th>
+            <th scope="col">Time</th>
+            <th scope="col" class="num">
+              From
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {ledger.map(([line, vitola, size, time, price]) => (
+            <tr>
+              <td data-label="Line">{line}</td>
+              <td data-label="Vitola">{vitola}</td>
+              <td data-label="Size" class="num-left">
+                {size}
+              </td>
+              <td data-label="Time" class="num-left">
+                {time}
+              </td>
+              <td data-label="From" class="num">
+                {price}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="group">
+      <h3>Rules</h3>
+      <ul class="rules">
+        <li>Headings are 400. H3 and H4 are 500. Never 700.</li>
+        <li>
+          Italic is for one word, a subtitle, a signature or a Spanish craft term, marked
+          <code>&lt;i lang="es"&gt;</code>, as in <i lang="es">galera</i>, <i lang="es">pilón</i>,
+          <i lang="es">capa</i>, <i lang="es">entubado</i>.
+        </li>
+        <li>Sentence case everywhere. Capitals with tracking are for labels only.</li>
+        <li>Lines of text run 60–72 characters.</li>
+        <li>
+          Typographic marks: “double” and ‘single’ quotes, an en dash in ranges (45–60 days), × in
+          sizes.
+        </li>
+        <li>
+          Headings balance and body text wraps with <code>text-wrap: pretty</code>. Headings are not
+          hyphenated.
+        </li>
+      </ul>
+    </div>
+
+    <div class="group" data-surface="paper">
+      <div class="paper-block">
+        <Label>On paper</Label>
+        <p class="paper-article">
+          Article text sits on paper in ink. The measure is about 680 px, and Garamond is set a
+          little larger than the interface text because its x-height is small. A reading page is the
+          one place the book is allowed to be quiet for a long time.
+        </p>
+      </div>
+    </div>
+  </Section>
+
+  <!-- Brand review -->
+  <Section id="brand" label="04 · Brand review" title="Brand review: for designer approval">
+    <div class="group">
+      <p class="note">
+        Every mark below is the shipped file, unchanged. The grey guides are drawn over the same
+        files for inspection only and are not part of any asset. The measurements come from the
+        generator that drew the files, not from typed-in values. Units are viewBox units unless a
+        size is given in px.
+      </p>
+      <ul class="review-index">
+        <li>
+          <a href="#rv-wordmark">1 Wordmark</a>
+        </li>
+        <li>
+          <a href="#rv-stacked">2 Stacked wordmark</a>
+        </li>
+        <li>
+          <a href="#rv-monogram">3 Monogram</a>
+        </li>
+        <li>
+          <a href="#rv-bands">4–6 Bands</a>
+        </li>
+        <li>
+          <a href="#rv-min">Minimum size</a>
+        </li>
+        <li>
+          <a href="#rv-favicon">7–9 Favicon, ICO, touch icon</a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- 1 Wordmark -->
+    <div class="group review" id="rv-wordmark">
+      <h3>1 · Wordmark</h3>
+      <p class="file">
+        logo-wordmark.svg · viewBox {wmVB.w} × {wmVB.h}
+      </p>
+      <div class="brand-pair">
+        <div class="brand-stage" data-surface="dark">
+          <Label>On dark</Label>
+          <BrandMark mark="wordmark" label="Casa Velado, established 1987, Estelí" class="wm" />
+        </div>
+        <div class="brand-stage" data-surface="paper">
+          <Label>On paper</Label>
+          <BrandMark mark="wordmark" label="Casa Velado, established 1987, Estelí" class="wm" />
+        </div>
+      </div>
+
+      <div class="brand-stage brand-stage--guides" data-surface="dark">
+        <Label>Same file with guides: cap line, baseline, ink edge of every letter</Label>
+        <div class="guided guided--wordmark">
+          <BrandMark mark="wordmark" class="wm" />
+          <svg
+            class="guides"
+            viewBox={`0 0 ${wmVB.w} ${wmVB.h}`}
+            aria-hidden="true"
+            focusable="false"
+          >
+            <g class="g-line">
+              <line
+                x1="0"
+                x2={wmVB.w}
+                y1={wm.nameBase - wm.nameCap}
+                y2={wm.nameBase - wm.nameCap}
+              />
+              <line x1="0" x2={wmVB.w} y1={wm.nameBase} y2={wm.nameBase} />
+              <line x1="0" x2={wmVB.w} y1={wm.subBase - wm.subCap} y2={wm.subBase - wm.subCap} />
+              <line x1="0" x2={wmVB.w} y1={wm.subBase} y2={wm.subBase} />
+            </g>
+            {wm.glyphs.map((g, i) => (
+              <>
+                <line
+                  class="g-edge"
+                  x1={g.left}
+                  x2={g.left}
+                  y1={wm.nameBase - wm.nameCap}
+                  y2={wm.nameBase}
+                />
+                <line
+                  class="g-edge"
+                  x1={g.right}
+                  x2={g.right}
+                  y1={wm.nameBase - wm.nameCap}
+                  y2={wm.nameBase}
+                />
+                {wm.glyphs[i + 1] && (
+                  <rect
+                    class="g-gap"
+                    x={g.right}
+                    y={wm.nameBase - wm.nameCap}
+                    width={wm.glyphs[i + 1]!.left - g.right}
+                    height={wm.nameCap}
+                  />
+                )}
+              </>
+            ))}
+          </svg>
+        </div>
+        <p class="note">
+          Shaded bands are the ink gaps between letters. The wide one is the word space.
+        </p>
+      </div>
+
+      <dl class="rationale">
+        <div>
+          <dt>Proportions</dt>
+          <dd>
+            The name is Garamond capitals with a cap height of {wm.nameCap} units in a box of{' '}
+            {wmVB.w} × {wmVB.h}, with {wm.pad} units of margin on every side. The sub-line is Plex
+            500 with a cap height of {wm.subCap}, which is {pct(wm.subCap / wm.nameCap)} of the
+            name's. Its ink is {wm.subInkWidth} wide, {pct(wm.subInkWidth / wm.nameInkWidth)}
+            of the name's {wm.nameInkWidth}. It sits {wm.gapNameToSub} below the baseline,{' '}
+            {(wm.gapNameToSub / wm.nameCap).toFixed(2)} of the name's cap height, and is aligned
+            left under the C, never centred.
+          </dd>
+        </div>
+        <div>
+          <dt>Tracking and manual kerning</dt>
+          <dd>
+            Tracking is {wm.nameTracking}em, {wm.nameTracking * wm.nameSize} units at this size,
+            added after every letter. The font's own kerning is zero for all eight letter pairs in
+            the name, so the manual corrections are the only optical adjustment between letters.
+            They are small beside the tracking, and the biggest are where a diagonal meets a stem:
+            VE and LA are drawn in. The generator also lists AV, which has no effect: A and V are
+            separated by the word space. The word space is {pct(wm.wordSpace)} of a tracked space,
+            which leaves {wm.wordGap} between the A and the V, about
+            {(wm.wordGap / avgGap).toFixed(1)} times the average letter gap of {avgGap.toFixed(1)}.
+          </dd>
+        </div>
+      </dl>
+
+      <table class="table">
+        <caption class="cap">
+          Gap between the ink of two neighbouring letters, in units at name size 100
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Pair</th>
+            <th scope="col" class="num">
+              Natural
+            </th>
+            <th scope="col" class="num">
+              Font kerning
+            </th>
+            <th scope="col" class="num">
+              Tracking
+            </th>
+            <th scope="col" class="num">
+              Manual
+            </th>
+            <th scope="col" class="num">
+              Final
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {wm.pairs.map((p) => (
+            <tr>
+              <td data-label="Pair">{p.pair}</td>
+              <td data-label="Natural" class="num">
+                {signed(p.natural, false)}
+              </td>
+              <td data-label="Font kerning" class="num">
+                {signed(p.kern)}
+              </td>
+              <td data-label="Tracking" class="num">
+                {signed(p.tracking)}
+              </td>
+              <td data-label="Manual" class="num">
+                {signed(p.manual)}
+              </td>
+              <td data-label="Final" class="num">
+                {signed(p.final, false)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 2 Stacked -->
+    <div class="group review" id="rv-stacked">
+      <h3>2 · Stacked wordmark</h3>
+      <p class="file">
+        logo-wordmark-stacked.svg · viewBox {stVB.w} × {stVB.h}
+      </p>
+      <div class="brand-pair">
+        <div class="brand-stage brand-stage--centre" data-surface="dark">
+          <Label>On dark</Label>
+          <BrandMark
+            mark="wordmark-stacked"
+            label="Casa Velado, established 1987, Estelí"
+            class="wm-stacked"
+          />
+        </div>
+        <div class="brand-stage brand-stage--centre" data-surface="paper">
+          <Label>On paper</Label>
+          <BrandMark
+            mark="wordmark-stacked"
+            label="Casa Velado, established 1987, Estelí"
+            class="wm-stacked"
+          />
+        </div>
+      </div>
+      <dl class="rationale">
+        <div>
+          <dt>Proportions</dt>
+          <dd>
+            Both name lines keep the horizontal wordmark's size and tracking, so the letters are
+            spaced exactly as before. CASA is {st.casaInk} wide and VELADO {st.veladoInk}, so CASA
+            is {pct(st.casaInk / st.veladoInk)} of VELADO. The lines are {st.lineLead} apart,{' '}
+            {st.lineLeadRatio} of the cap height. CASA, VELADO and the sub-line all centre on x ={' '}
+            {st.casaCentre}. CASA is not stretched to the width of VELADO: that needed a tracking of
+            0.75em, and the four letters read as separate marks.
+          </dd>
+        </div>
+      </dl>
+    </div>
+
+    <!-- 3 Monogram -->
+    <div class="group review" id="rv-monogram">
+      <h3>3 · Monogram</h3>
+      <p class="file">
+        monogram.svg · viewBox {moVB.w} × {moVB.h}
+      </p>
+      <div class="brand-pair">
+        <div class="brand-stage brand-stage--centre brand-stage--gold" data-surface="dark">
+          <Label>On dark, gold</Label>
+          <BrandMark mark="monogram" label="Casa Velado monogram" class="mono" />
+        </div>
+        <div class="brand-stage brand-stage--centre" data-surface="paper">
+          <Label>On paper, ink</Label>
+          <BrandMark mark="monogram" label="Casa Velado monogram" class="mono" />
+        </div>
+      </div>
+
+      <div class="brand-stage brand-stage--guides brand-stage--centre" data-surface="dark">
+        <Label>
+          Same file with guides: centre lines, cap line, baseline, ink box of the letters
+        </Label>
+        <div class="guided guided--mono">
+          <BrandMark mark="monogram" class="mono" />
+          <svg
+            class="guides"
+            viewBox={`0 0 ${moVB.w} ${moVB.h}`}
+            aria-hidden="true"
+            focusable="false"
+          >
+            <g class="g-line">
+              <line x1={mo.cx} x2={mo.cx} y1="0" y2={moVB.h} />
+              <line x1="0" x2={moVB.w} y1={mo.cy} y2={mo.cy} />
+              <line x1="0" x2={moVB.w} y1={mo.letters.top} y2={mo.letters.top} />
+              <line x1="0" x2={moVB.w} y1={mo.letters.base} y2={mo.letters.base} />
+            </g>
+            <rect
+              class="g-box"
+              x={mo.letters.left}
+              y={mo.letters.top}
+              width={mo.letters.width}
+              height={mo.letters.base - mo.letters.top}
+            />
+          </svg>
+        </div>
+      </div>
+
+      <dl class="rationale">
+        <div>
+          <dt>Proportions</dt>
+          <dd>
+            The outer oval is {mo.outer.rx * 2} × {mo.outer.ry * 2}, a ratio of{' '}
+            {(mo.outer.rx / mo.outer.ry).toFixed(2)} : 1. The inner oval is {mo.inner.rx * 2} ×{' '}
+            {mo.inner.ry * 2}, {mo.outer.rx - mo.inner.rx} units inside it. The outer line is{' '}
+            {mo.outer.stroke} and the inner {mo.inner.stroke}, so the outer carries{' '}
+            {(mo.outer.stroke / mo.inner.stroke).toFixed(1)} times the weight. The letters are
+            Garamond 400 with a cap height of {mo.letters.cap},
+            {pct(mo.letters.cap / (mo.outer.ry * 2))} of the oval's height, and an ink width of{' '}
+            {mo.letters.width}, {pct(mo.letters.width / (mo.outer.rx * 2))} of its width. They are
+            tracked {mo.letters.tracking}em; their ink is centred across the oval and sits{' '}
+            {monoShift} unit below its centre, a small optical correction.
+          </dd>
+        </div>
+      </dl>
+    </div>
+
+    <!-- 4-6 Bands -->
+    <div class="group review" id="rv-bands">
+      <h3>4–6 · Bands</h3>
+      <p class="note">
+        Shown at 640 px, the width of the artwork. The three differ only in the number and weight of
+        their lines and in the letters; the strip, the cap height and the centred monogram do not
+        change. None carries text or gold.
+      </p>
+      <ul class="band-rows">
+        {bandRows.map((b) => (
+          <li class="band-row">
+            <div class="band-art">
+              <BrandMark mark={b.mark} label={b.alt} />
+            </div>
+            <div class="band-info">
+              <p class="band-title">
+                <span class="band-step">{b.step}</span>
+                {b.title}
+              </p>
+              <p class="file">{b.mark}.svg</p>
+              <p class="band-text">{b.text}</p>
+              <dl class="band-spec">
+                <div>
+                  <dt>Frame</dt>
+                  <dd>{b.frame}</dd>
+                </div>
+                <div>
+                  <dt>Oval</dt>
+                  <dd>{b.oval}</dd>
+                </div>
+                <div>
+                  <dt>Letters</dt>
+                  <dd>{b.letters}</dd>
+                </div>
+              </dl>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <dl class="rationale">
+        <div>
+          <dt>Differences between the three</dt>
+          <dd>
+            Each step adds one line or thins one. The first ring has one frame and one oval line,
+            both
+            {mb['band-1987'].frames[0]![1]} thick, with open 500-weight letters. The middle ring
+            keeps the single frame, thins it to
+            {mb['band-mid'].frames[0]![1]} and adds the second, finer line to the oval. The current
+            ring adds a second frame line and thins everything again, which makes the oval the same
+            seal as the monogram. As the lines thin, the letters lighten from 500 to 400 and close
+            up from {mb['band-1987'].letters.tracking}em to {mb['band-current'].letters.tracking}em,
+            and the oval grows a little, from {ovalWidth('band-1987')} to{' '}
+            {ovalWidth('band-current')} wide. The year of the middle ring is not in the artwork; it
+            stays <span>[YEAR]</span> until it is supplied.
+          </dd>
+        </div>
+      </dl>
+    </div>
+
+    <!-- Minimum size -->
+    <div class="group review" id="rv-min">
+      <h3>Minimum-size behaviour</h3>
+      <p class="note">
+        The wordmark at 240, 200, 160 and 120 px wide, as rendered. Below 200 px the sub-line is
+        smaller than 4 px and stops being legible, so the rule is: wordmark from 200 px up, the
+        monogram below that.
+      </p>
+      <div class="brand-stage" data-surface="dark">
+        <ul class="min-sizes">
+          {minWidths.map((w) => (
+            <li>
+              <BrandMark
+                mark="wordmark"
+                label="Casa Velado, established 1987, Estelí"
+                class={`wm-${w}`}
+              />
+              <span>
+                {w} px · name cap {((wm.nameCap / wmVB.w) * w).toFixed(1)} px · sub-line cap{' '}
+                {((wm.subCap / wmVB.w) * w).toFixed(1)} px
+              </span>
+            </li>
+          ))}
+        </ul>
+        <ul class="min-sizes min-sizes--mono">
+          <li>
+            <BrandMark mark="monogram" label="Casa Velado monogram" class="m-48" />
+            <span>Monogram, 48 px</span>
+          </li>
+          <li>
+            <BrandMark mark="monogram" label="Casa Velado monogram" class="m-32" />
+            <span>Monogram, 32 px</span>
+          </li>
+        </ul>
+      </div>
+      <p class="note">
+        Clear space is one cap height of the name ({wm.nameCap} units) on every side; at 200 px wide
+        that is about
+        {((wm.nameCap / wmVB.w) * 200).toFixed(0)} px.
+      </p>
+    </div>
+
+    <!-- 7-9 Favicon -->
+    <div class="group review" id="rv-favicon">
+      <h3>7–9 · Favicon, ICO and touch icon</h3>
+      <p class="note">
+        Shown at their real pixel sizes. A 1× screen draws one image pixel per CSS pixel; on a 2×
+        screen the browser picks a larger image or scales. The ICO entries are read from the shipped
+        file and shown again magnified 6× with nearest-neighbour scaling, so single pixels can be
+        inspected.
+      </p>
+
+      <div class="fav-block">
+        <h4>
+          7 · favicon.svg · viewBox {fvVB.w} × {fvVB.h}
+        </h4>
+        <ul class="fav-row">
+          {[16, 32, 48].map((s) => (
+            <li>
+              <img src="/favicon.svg" width={s} height={s} alt="" />
+              <span>{s} px</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div class="fav-block">
+        <h4>8 · favicon.ico · three embedded PNGs</h4>
+        <ul class="fav-row">
+          {icoEntries.map((e) => (
+            <li>
+              <img src={e.uri} width={e.size} height={e.size} alt="" />
+              <span>
+                {e.size} px, {e.bytes} B
+              </span>
+            </li>
+          ))}
+        </ul>
+        <ul class="fav-row fav-row--loupe">
+          {icoEntries.map((e) => (
+            <li>
+              <img class="loupe" src={e.uri} width={e.size * 6} height={e.size * 6} alt="" />
+              <span>{e.size} px at 6×</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div class="fav-block">
+        <h4>9 · apple-touch-icon.png · 180 × 180</h4>
+        <ul class="fav-row">
+          <li>
+            <img src="/apple-touch-icon.png" width="180" height="180" alt="" />
+            <span>180 px</span>
+          </li>
+        </ul>
+      </div>
+
+      <dl class="rationale">
+        <div>
+          <dt>Favicon simplification</dt>
+          <dd>
+            The monogram's lines are too fine for a tab: its outer line is{' '}
+            {pct1(mo.outer.stroke / moVB.w)} of the width, which at 16 px is
+            {((mo.outer.stroke / moVB.w) * 16).toFixed(2)} px. The favicon drops the inner line and
+            draws one line of {fv.oval.stroke} in 64, {pct1(fv.oval.stroke / fvVB.w)} of the width
+            and {((fv.oval.stroke / fvVB.w) * 16).toFixed(2)} px at 16 px. The oval takes{' '}
+            {pct((fv.oval.rx * 2) / fvVB.w)} of the tile, and the letters change from weight 400 to
+            700 at a cap height of
+            {fv.letters.cap}, {pct(fv.letters.cap / fvVB.h)} of the tile. The 16 px entry of the ICO
+            keeps only the letters, at a cap height of {fv.tiny.cap} ({pct(fv.tiny.cap / fvVB.h)} of
+            the tile), because a ring and two letters cannot both be read in 16 px. The touch icon
+            is the larger, quieter version: both oval lines are kept ({ti.ovals[0]![2]} and{' '}
+            {ti.ovals[1]![2]} in {tiVB.w}) and the letters are weight 600. Colours are gold{' '}
+            <span>#B08D57</span> on warm black <span>#14110F</span>, opaque.
+          </dd>
+        </div>
+        <div>
+          <dt>For the designer to judge</dt>
+          <dd>
+            In the 16 px entry the letters span {fv.tiny.width} of the tile's 64, so they touch both
+            edges. This was chosen for legibility at 16 px and is the first thing to check on the
+            loupe above.
+          </dd>
+        </div>
+      </dl>
+    </div>
+  </Section>
+
+  <!-- Space -->
+  <Section id="space" label="05 · Space and grid" title="Four pixels, twelve columns">
+    <div class="group">
+      <h3>Scale</h3>
+      <ul class="spaces">
+        {spaces.map((px) => (
+          <li class="space-row">
+            <code>--space-{px}</code>
+            <span class="space-px">{px} px</span>
+            <span class="space-bar" style={`width: var(--space-${px})`} aria-hidden="true" />
+          </li>
+        ))}
+      </ul>
+      <div class="rhythm-row">
+        <code>--space-section</code>
+        <span class="space-px">
+          <output data-measure-out>—</output> now
+        </span>
+        <span class="note">
+          72 px on a phone, 160 px from 1600 px. Inside a section 32–64 px; heading to text 16–24
+          px.
+        </span>
+      </div>
+      <div class="rhythm" data-measure aria-hidden="true"></div>
+    </div>
+
+    <div class="group">
+      <h3>Grid</h3>
+      <p class="note">The columns below are the live grid. Resize to see 4, 8 and 12.</p>
+      <Container grid class="demo-grid">
+        {Array.from({ length: 12 }, (_, i) => (
+          <span class="cell" aria-hidden="true">
+            {i + 1}
+          </span>
+        ))}
+      </Container>
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Width</th>
+            <th scope="col" class="num">
+              Columns
+            </th>
+            <th scope="col" class="num">
+              Gutter
+            </th>
+            <th scope="col" class="num">
+              Margin
+            </th>
+            <th scope="col">Character</th>
+          </tr>
+        </thead>
+        <tbody>
+          {breakpoints.map(([key, name, width, cols, gutter, margin, character]) => (
+            <tr data-bp={key}>
+              <td data-label="Name">{name}</td>
+              <td data-label="Width" class="num-left">
+                {width}
+              </td>
+              <td data-label="Columns" class="num">
+                {cols}
+              </td>
+              <td data-label="Gutter" class="num">
+                {gutter}
+              </td>
+              <td data-label="Margin" class="num">
+                {margin}
+              </td>
+              <td data-label="Character">{character}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p class="note">
+        Written mobile first; larger screens add with <code>min-width</code>. Hover styles live only
+        under <code>(hover: hover) and (pointer: fine)</code>.
+      </p>
+    </div>
+
+    <div class="group">
+      <h3>Containers</h3>
+      <ul class="containers">
+        {containers.map(([name, width, use]) => (
+          <li>
+            <code>{name}</code>
+            <span class="space-px">{width}</span>
+            <span class="note">{use}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </Section>
+
+  <!-- Lines and surfaces -->
+  <Section id="lines" label="06 · Lines and surfaces" title="Hairlines, square corners, no shadows">
+    <div class="group">
+      <h3>Lines</h3>
+      <div class="lines">
+        <div>
+          <code>--rule</code>
+          <hr class="line-rule" />
+          <p class="note">1 px. Book-line rules. Carries no information, so it may be faint.</p>
+        </div>
+        <div>
+          <code>--border</code>
+          <hr class="line-border" />
+          <p class="note">
+            1 px. Outlines of fields and buttons. 3.3 : 1 on <code>--bg</code>.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h3>Surfaces</h3>
+      <div class="surfaces">
+        <div class="surface surface--bg">
+          <code>--bg</code>
+          <span>Page</span>
+        </div>
+        <div class="surface surface--surface">
+          <code>--surface</code>
+          <span>Drawer, block</span>
+        </div>
+        <div class="surface surface--surface-2">
+          <code>--surface-2</code>
+          <span>Photo ground</span>
+        </div>
+      </div>
+      <p class="note">
+        Every corner is square; photographs have no frame, no shadow and no overlay. The only
+        overlay is the gradient under hero text, and it exists for legibility.
+      </p>
+    </div>
+  </Section>
+
+  <!-- Focus -->
+  <Section id="focus" label="07 · Focus" title="A plain line, always visible">
+    <p class="note">
+      <code>:focus-visible</code>: a solid 2 px line in the text colour (ink on paper), 3 px away.
+      Press Tab to move through the samples. Nothing removes the outline without a replacement.
+    </p>
+    <div class="scopes">
+      <div class="scope focus-demo" data-surface="dark">
+        <Label>On dark</Label>
+        <p>
+          <a href="#focus">A text link</a>
+        </p>
+        <p>
+          <button type="button">A plain button</button>
+        </p>
+      </div>
+      <div class="scope focus-demo" data-surface="paper">
+        <Label>On paper</Label>
+        <p>
+          <a href="#focus">A text link</a>
+        </p>
+        <p>
+          <button type="button">A plain button</button>
+        </p>
+      </div>
+    </div>
+  </Section>
+
+  <!-- Motion -->
+  <Section id="motion" label="08 · Motion" title="Motion explains. It never performs.">
+    <div class="group">
+      <h3>Tokens</h3>
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Token</th>
+            <th scope="col" class="num">
+              Value
+            </th>
+            <th scope="col">Used for</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Object.entries(motion).map(([name, value]) => (
+            <tr>
+              <td data-label="Token">
+                <code>--{name}</code>
+              </td>
+              <td data-label="Value" class="num-left">
+                {value}
+              </td>
+              <td data-label="Used for">{durationUse[name] ?? ''}</td>
+            </tr>
+          ))}
+          {Object.entries(easing).map(([name, value]) => (
+            <tr>
+              <td data-label="Token">
+                <code>--{name}</code>
+              </td>
+              <td data-label="Value" class="num-left">
+                {value}
+              </td>
+              <td data-label="Used for">
+                {name === 'ease-out' ? 'Entrances and most transitions' : 'Cross-fades'}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p class="note">
+        Only <code>opacity</code> and <code>transform</code> animate. Page changes use native view
+        transitions, a 200 ms cross-fade; there is no client-side router.
+      </p>
+    </div>
+
+    <div class="group">
+      <h3>Samples</h3>
+      <p class="note">
+        Press each button. With <code>prefers-reduced-motion: reduce</code> the movement is removed
+        and only a 100 ms fade remains.
+      </p>
+      <div class="demos">
+        <div class="demo">
+          <button type="button" data-demo="fade" aria-pressed="false">
+            Fade · image, 200 ms
+          </button>
+          <div class="stage">
+            <span class="mover mover--fade" aria-hidden="true"></span>
+          </div>
+        </div>
+        <div class="demo">
+          <button type="button" data-demo="rise" aria-pressed="false">
+            Rise · hero text, 450 ms
+          </button>
+          <div class="stage">
+            <span class="mover mover--rise">Tobacco, left to mature.</span>
+          </div>
+        </div>
+        <div class="demo">
+          <button type="button" data-demo="slide" aria-pressed="false">
+            Slide · drawer, 250 ms
+          </button>
+          <div class="stage stage--clip">
+            <span class="mover mover--slide">Cart (3)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h3>Not used</h3>
+      <ul class="rules">
+        <li>
+          Parallax, a custom cursor, magnetic buttons, letter-by-letter text, 3D, Lottie, a
+          preloader.
+        </li>
+        <li>Smooth-scroll libraries, horizontal scroll driven by vertical, endless marquees.</li>
+        <li>
+          Scroll reveal for paragraphs, cards or lists. Only section headings and large photographs.
+        </li>
+      </ul>
+    </div>
+  </Section>
+
+  <!-- Stage 6: the core components -->
+  <Components />
+</Base>
+
+<style>
+  /* Page-only rules. Tokens do the rest. */
+  .intro {
+    padding-block: var(--space-96) var(--space-64);
+  }
+
+  .intro :global(.container) {
+    display: grid;
+    gap: var(--space-24);
+  }
+
+  .lead-in {
+    max-width: var(--measure);
+    font-family: var(--font-serif);
+    font-size: var(--fs-lead);
+    line-height: var(--lh-lead);
+    color: var(--text-2);
+  }
+
+  .viewport {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8) var(--space-48);
+    font-size: var(--fs-small);
+  }
+
+  .viewport div {
+    display: flex;
+    gap: var(--space-12);
+  }
+
+  .viewport dt {
+    color: var(--text-3);
+  }
+
+  .toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8) var(--space-24);
+    list-style: none;
+    font-size: var(--fs-small);
+  }
+
+  .toc a {
+    display: inline-block;
+    padding-block: var(--space-12);
+  }
+
+  .group {
+    display: grid;
+    gap: var(--space-24);
+    align-content: start;
+  }
+
+  .group > h3 {
+    font-size: var(--fs-h3);
+  }
+
+  .note {
+    max-width: var(--measure);
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--text-2);
+  }
+
+  code {
+    font-family: var(--font-sans);
+    font-size: 0.9em;
+    color: var(--text-2);
+  }
+
+  /* Principles */
+  .principles {
+    display: grid;
+    gap: var(--space-48);
+  }
+
+  .north-star {
+    display: grid;
+    gap: var(--space-16);
+    max-width: var(--measure);
+  }
+
+  .lead {
+    font-family: var(--font-serif);
+    font-size: var(--fs-lead);
+    line-height: var(--lh-lead);
+  }
+
+  .rules {
+    display: grid;
+    gap: var(--space-12);
+    max-width: var(--measure);
+    padding-left: var(--space-24);
+    line-height: var(--lh-ui);
+  }
+
+  @media (min-width: 1024px) {
+    .principles {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: var(--gutter);
+    }
+  }
+
+  /* Swatches */
+  .swatches {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr));
+    gap: var(--space-32) var(--gutter);
+    list-style: none;
+  }
+
+  .swatch {
+    display: grid;
+    gap: var(--space-4);
+    align-content: start;
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+  }
+
+  .chip {
+    display: block;
+    height: 5.5rem;
+    margin-bottom: var(--space-8);
+    border: var(--line) solid var(--rule);
+  }
+
+  .hex {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .role {
+    color: var(--text-2);
+  }
+
+  /* Tables: stacked rows below 640px, a plain table above */
+  .table {
+    width: 100%;
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+  }
+
+  .table th {
+    padding: var(--space-12) var(--space-16) var(--space-12) 0;
+    font-size: var(--fs-label);
+    font-weight: var(--fw-medium);
+    letter-spacing: var(--ls-label);
+    text-transform: uppercase;
+    color: var(--text-3);
+    border-bottom: var(--line) solid var(--border);
+  }
+
+  .table td {
+    padding: var(--space-12) var(--space-16) var(--space-12) 0;
+    vertical-align: top;
+    border-bottom: var(--line) solid var(--rule);
+  }
+
+  .table tr[data-bp] td {
+    color: var(--text-2);
+  }
+
+  .table tr[data-current] td {
+    color: var(--text);
+    border-bottom-color: var(--border);
+  }
+
+  .table .num,
+  .table .num-left {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .table .num {
+    text-align: right;
+  }
+
+  @media (max-width: 639px) {
+    .table thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+
+    .table,
+    .table tbody,
+    .table tr,
+    .table td {
+      display: block;
+    }
+
+    .table tr {
+      padding-block: var(--space-12);
+      border-bottom: var(--line) solid var(--rule);
+    }
+
+    .table td {
+      display: grid;
+      grid-template-columns: 7rem minmax(0, 1fr);
+      gap: var(--space-12);
+      padding: var(--space-4) 0;
+      border: 0;
+    }
+
+    .table td::before {
+      content: attr(data-label);
+      color: var(--text-3);
+    }
+
+    .table .num {
+      text-align: left;
+    }
+  }
+
+  /* Scopes */
+  .scopes {
+    display: grid;
+    gap: var(--space-16);
+  }
+
+  .scope {
+    display: grid;
+    gap: var(--space-12);
+    padding: var(--space-24);
+    border: var(--line) solid var(--rule);
+  }
+
+  .scope-title {
+    font-family: var(--font-serif);
+    font-size: var(--fs-h3);
+    font-weight: var(--fw-medium);
+    line-height: var(--lh-h3);
+  }
+
+  @media (min-width: 640px) {
+    .scopes {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  /* Type */
+  .families {
+    display: grid;
+    gap: var(--space-32);
+  }
+
+  .family {
+    display: grid;
+    gap: var(--space-8);
+    align-content: start;
+  }
+
+  .family-name {
+    font-size: var(--fs-h2);
+    line-height: var(--lh-h2);
+  }
+
+  .family--serif .family-name,
+  .family--serif .glyphs {
+    font-family: var(--font-serif);
+  }
+
+  .family--sans .family-name,
+  .family--sans .glyphs {
+    font-family: var(--font-sans);
+  }
+
+  .family-meta {
+    font-size: var(--fs-small);
+    color: var(--text-2);
+  }
+
+  .glyphs {
+    font-size: var(--fs-lead);
+    line-height: var(--lh-lead);
+    overflow-wrap: anywhere;
+  }
+
+  @media (min-width: 640px) {
+    .families {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: var(--gutter);
+    }
+  }
+
+  .scale {
+    display: grid;
+    list-style: none;
+  }
+
+  .role-row {
+    display: grid;
+    gap: var(--space-12);
+    padding-block: var(--space-24);
+    border-top: var(--line) solid var(--rule);
+  }
+
+  .role-meta {
+    display: grid;
+    gap: var(--space-4);
+    align-content: start;
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+  }
+
+  .role-name {
+    font-weight: var(--fw-medium);
+  }
+
+  .role-spec {
+    color: var(--text-2);
+  }
+
+  .role-sample {
+    min-width: 0;
+    max-width: var(--measure);
+  }
+
+  .role-sample[data-role='display'] {
+    font-family: var(--font-serif);
+    font-size: var(--fs-display);
+    line-height: var(--lh-display);
+    font-weight: var(--fw-regular);
+    text-wrap: balance;
+    max-width: 14ch;
+  }
+
+  .role-sample[data-role='h1'] {
+    font-family: var(--font-serif);
+    font-size: var(--fs-h1);
+    line-height: var(--lh-h1);
+  }
+
+  .role-sample[data-role='h2'] {
+    font-family: var(--font-serif);
+    font-size: var(--fs-h2);
+    line-height: var(--lh-h2);
+    text-wrap: balance;
+  }
+
+  .role-sample[data-role='h3'] {
+    font-family: var(--font-serif);
+    font-size: var(--fs-h3);
+    line-height: var(--lh-h3);
+    font-weight: var(--fw-medium);
+  }
+
+  .role-sample[data-role='h4'] {
+    font-family: var(--font-serif);
+    font-size: var(--fs-h4);
+    line-height: var(--lh-h4);
+    font-weight: var(--fw-medium);
+  }
+
+  .role-sample[data-role='lead'] {
+    font-family: var(--font-serif);
+    font-size: var(--fs-lead);
+    line-height: var(--lh-lead);
+    text-wrap: pretty;
+  }
+
+  .role-sample[data-role='article'] {
+    font-family: var(--font-serif);
+    font-size: var(--fs-article);
+    line-height: var(--lh-article);
+    text-wrap: pretty;
+  }
+
+  .role-sample[data-role='ui'] {
+    font-size: var(--fs-ui);
+    line-height: var(--lh-ui);
+  }
+
+  .role-sample[data-role='small'] {
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+  }
+
+  .role-sample[data-role='label'] {
+    font-size: var(--fs-label);
+    font-weight: var(--fw-medium);
+    line-height: var(--lh-label);
+    letter-spacing: var(--ls-label);
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .role-sample[data-role='button'] {
+    font-size: var(--fs-button);
+    font-weight: var(--fw-medium);
+    line-height: var(--lh-button);
+  }
+
+  @media (min-width: 1024px) {
+    .role-row {
+      grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+      column-gap: var(--gutter);
+    }
+  }
+
+  .paper-block {
+    display: grid;
+    gap: var(--space-16);
+    padding: var(--space-32) var(--space-24);
+  }
+
+  .paper-article {
+    max-width: var(--measure);
+    font-family: var(--font-serif);
+    font-size: var(--fs-article);
+    line-height: var(--lh-article);
+    text-wrap: pretty;
+  }
+
+  /* Brand review */
+  .review-index {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8) var(--space-24);
+    list-style: none;
+    font-size: var(--fs-small);
+  }
+
+  .review-index a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+  }
+
+  .review {
+    scroll-margin-top: var(--space-32);
+    padding-top: var(--space-32);
+    border-top: var(--line) solid var(--rule);
+  }
+
+  .file {
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--text-3);
+    overflow-wrap: anywhere;
+  }
+
+  .brand-pair {
+    display: grid;
+    gap: var(--space-16);
+  }
+
+  .brand-stage {
+    display: grid;
+    gap: var(--space-32);
+    align-content: start;
+    padding: var(--space-32) var(--space-24);
+    border: var(--line) solid var(--rule);
+  }
+
+  .brand-stage--centre {
+    justify-items: center;
+  }
+
+  .brand-stage--centre > :global(.label) {
+    justify-self: start;
+  }
+
+  /* The monogram is gold only on dark. This is the one gold mark in the review. */
+  .brand-stage--gold :global(.mono) {
+    color: var(--gold);
+  }
+
+  .brand-stage :global(.wm) {
+    inline-size: min(100%, 30rem);
+  }
+
+  .brand-stage :global(.wm-stacked) {
+    inline-size: min(100%, 15rem);
+  }
+
+  .brand-stage :global(.mono) {
+    inline-size: min(100%, 12rem);
+  }
+
+  /* Guides drawn over the unchanged file. Not part of any asset. */
+  .guided {
+    position: relative;
+  }
+
+  .guided--wordmark {
+    inline-size: min(100%, 52rem);
+  }
+
+  .guided--mono {
+    inline-size: min(100%, 22rem);
+  }
+
+  .brand-stage .guided :global(.wm),
+  .brand-stage .guided :global(.mono) {
+    inline-size: 100%;
+  }
+
+  .guides {
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    pointer-events: none;
+    overflow: visible;
+  }
+
+  .g-line line,
+  .g-edge,
+  .g-box {
+    stroke: var(--text-3);
+    stroke-width: 0.5;
+    fill: none;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .g-edge {
+    stroke: var(--border);
+  }
+
+  .g-gap {
+    fill: var(--surface-2);
+    stroke: none;
+  }
+
+  .rationale {
+    display: grid;
+  }
+
+  .rationale > div {
+    display: grid;
+    gap: var(--space-8);
+    padding-block: var(--space-16);
+    border-top: var(--line) solid var(--rule);
+  }
+
+  .rationale dt {
+    font-size: var(--fs-label);
+    font-weight: var(--fw-medium);
+    letter-spacing: var(--ls-label);
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .rationale dd {
+    max-inline-size: 46rem;
+    font-size: var(--fs-small);
+    line-height: var(--lh-ui);
+    color: var(--text-2);
+  }
+
+  .cap {
+    padding-bottom: var(--space-12);
+    text-align: left;
+    color: var(--text-2);
+  }
+
+  /* Bands, one per row, at the width of the artwork */
+  .band-rows {
+    display: grid;
+    gap: var(--space-48);
+    list-style: none;
+  }
+
+  .band-row {
+    display: grid;
+    gap: var(--space-16);
+    align-content: start;
+  }
+
+  .band-art {
+    inline-size: min(100%, 640px);
+  }
+
+  .band-info {
+    display: grid;
+    gap: var(--space-8);
+    align-content: start;
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+  }
+
+  .band-title {
+    font-family: var(--font-serif);
+    font-size: var(--fs-h3);
+    line-height: var(--lh-h3);
+  }
+
+  .band-step {
+    display: block;
+    font-family: var(--font-sans);
+    font-size: var(--fs-label);
+    font-weight: var(--fw-medium);
+    letter-spacing: var(--ls-label);
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: var(--space-4);
+  }
+
+  .band-text {
+    max-inline-size: var(--measure);
+    color: var(--text-2);
+  }
+
+  .band-spec {
+    display: grid;
+    margin-top: var(--space-8);
+  }
+
+  .band-spec > div {
+    display: grid;
+    grid-template-columns: 5rem minmax(0, 1fr);
+    gap: var(--space-12);
+    padding-block: var(--space-8);
+    border-top: var(--line) solid var(--rule);
+  }
+
+  .band-spec dt {
+    color: var(--text-3);
+  }
+
+  @media (min-width: 1024px) {
+    .band-row {
+      grid-template-columns: minmax(0, 640px) minmax(0, 1fr);
+      column-gap: var(--space-48);
+    }
+  }
+
+  /* Minimum size */
+  .min-sizes {
+    display: grid;
+    gap: var(--space-24);
+    list-style: none;
+  }
+
+  .min-sizes li {
+    display: grid;
+    gap: var(--space-8);
+    justify-items: start;
+    font-size: var(--fs-small);
+    color: var(--text-2);
+  }
+
+  .min-sizes--mono {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--space-32);
+  }
+
+  .min-sizes :global(.wm-240) {
+    inline-size: min(100%, 240px);
+  }
+
+  .min-sizes :global(.wm-200) {
+    inline-size: min(100%, 200px);
+  }
+
+  .min-sizes :global(.wm-160) {
+    inline-size: min(100%, 160px);
+  }
+
+  .min-sizes :global(.wm-120) {
+    inline-size: min(100%, 120px);
+  }
+
+  .min-sizes :global(.m-48) {
+    inline-size: 48px;
+  }
+
+  .min-sizes :global(.m-32) {
+    inline-size: 32px;
+  }
+
+  /* Favicon, ICO, touch icon at real size */
+  .fav-block {
+    display: grid;
+    gap: var(--space-16);
+  }
+
+  .fav-block h4 {
+    font-size: var(--fs-h4);
+  }
+
+  .fav-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--space-24) var(--space-32);
+    list-style: none;
+  }
+
+  .fav-row li {
+    display: grid;
+    gap: var(--space-8);
+    justify-items: start;
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--text-2);
+  }
+
+  /* The tile is warm black like the page, so each image gets a hairline. */
+  .fav-row img {
+    outline: var(--line) solid var(--rule);
+  }
+
+  .fav-row .loupe {
+    image-rendering: pixelated;
+  }
+
+  @media (min-width: 640px) {
+    .brand-pair {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  /* Space */
+  .spaces,
+  .containers {
+    display: grid;
+    list-style: none;
+  }
+
+  .space-row,
+  .containers li,
+  .rhythm-row {
+    display: grid;
+    grid-template-columns: 9.5rem 4.5rem minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-8) var(--space-16);
+    min-height: 2.75rem;
+    border-bottom: var(--line) solid var(--rule);
+    font-size: var(--fs-small);
+  }
+
+  .space-px {
+    font-variant-numeric: tabular-nums;
+    color: var(--text-2);
+  }
+
+  .space-bar {
+    display: block;
+    height: 0.75rem;
+    max-width: 100%;
+    background: var(--text-2);
+  }
+
+  .rhythm-row {
+    grid-template-columns: 9.5rem 6rem minmax(0, 1fr);
+    padding-block: var(--space-12);
+  }
+
+  .rhythm {
+    height: var(--space-section);
+    max-width: 100%;
+    background: var(--surface-2);
+  }
+
+  :global(.container.container--grid.demo-grid) {
+    width: 100%; /* already inside the page container */
+    row-gap: var(--space-8);
+  }
+
+  .cell {
+    display: grid;
+    place-items: center;
+    height: 4rem;
+    font-size: var(--fs-label);
+    color: var(--text-2);
+    background: var(--surface);
+    border: var(--line) solid var(--rule);
+  }
+
+  @media (max-width: 1023px) {
+    .cell:nth-child(n + 9) {
+      display: none;
+    }
+  }
+
+  @media (max-width: 639px) {
+    .cell:nth-child(n + 5) {
+      display: none;
+    }
+  }
+
+  /* Lines and surfaces */
+  .lines,
+  .surfaces {
+    display: grid;
+    gap: var(--space-24);
+  }
+
+  .line-rule,
+  .line-border {
+    margin: var(--space-12) 0;
+    border: 0;
+    height: var(--line);
+  }
+
+  .line-rule {
+    background: var(--rule);
+  }
+
+  .line-border {
+    background: var(--border);
+  }
+
+  .surface {
+    display: grid;
+    gap: var(--space-4);
+    align-content: end;
+    min-height: 7rem;
+    padding: var(--space-16);
+    border: var(--line) solid var(--rule);
+    font-size: var(--fs-small);
+  }
+
+  .surface--bg {
+    background: var(--bg);
+  }
+
+  .surface--surface {
+    background: var(--surface);
+  }
+
+  .surface--surface-2 {
+    background: var(--surface-2);
+  }
+
+  @media (min-width: 640px) {
+    .lines {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: var(--gutter);
+    }
+
+    .surfaces {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      column-gap: var(--gutter);
+    }
+  }
+
+  /* Focus */
+  .focus-demo button {
+    min-height: 2.75rem;
+    padding-inline: var(--space-24);
+    border: var(--line) solid var(--border);
+  }
+
+  .focus-demo a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+  }
+
+  /* Motion samples. Only opacity and transform change. */
+  .demos {
+    display: grid;
+    gap: var(--space-24);
+  }
+
+  .demo {
+    display: grid;
+    gap: var(--space-12);
+    align-content: start;
+  }
+
+  .demo button {
+    justify-self: start;
+    min-height: 2.75rem;
+    padding-inline: var(--space-16);
+    border: var(--line) solid var(--border);
+    font-size: var(--fs-small);
+  }
+
+  .stage {
+    display: grid;
+    align-items: center;
+    min-height: 5rem;
+    padding: var(--space-16);
+    background: var(--surface);
+    border: var(--line) solid var(--rule);
+    overflow-wrap: anywhere;
+  }
+
+  .stage--clip {
+    overflow: hidden;
+  }
+
+  .mover {
+    display: block;
+    transition-timing-function: var(--ease-out);
+  }
+
+  /* A block, not text: a faded block cannot fail text contrast. */
+  .mover--fade {
+    height: 3rem;
+    background: var(--border);
+    opacity: 0.2;
+    transition: opacity var(--dur-image) var(--ease-in-out);
+  }
+
+  .mover--rise {
+    opacity: 0;
+    transform: translateY(12px);
+    transition:
+      opacity var(--dur-slow) var(--ease-out),
+      transform var(--dur-slow) var(--ease-out);
+  }
+
+  .mover--slide {
+    transform: translateX(-120%);
+    transition: transform var(--dur-base) var(--ease-out);
+  }
+
+  .demo[data-on] .mover--fade {
+    opacity: 1;
+  }
+
+  .demo[data-on] .mover--rise {
+    opacity: 1;
+    transform: none;
+  }
+
+  .demo[data-on] .mover--slide {
+    transform: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mover--rise,
+    .mover--slide {
+      transform: none;
+    }
+
+    .mover--rise,
+    .mover--slide,
+    .mover--fade {
+      transition: opacity var(--dur-reduced) linear;
+    }
+
+    .mover--slide {
+      opacity: 0;
+    }
+
+    .demo[data-on] .mover--slide {
+      opacity: 1;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .demos {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      column-gap: var(--gutter);
+    }
+  }
+</style>
+
+<script>
+  // Live readouts for review: viewport width, breakpoint, current type sizes, section space,
+  // and the motion sample buttons. Nothing here is needed to read the page.
+  const names = ['mobile', 'tablet', 'laptop', 'desktop', 'wide'] as const;
+
+  function breakpoint(width: number): (typeof names)[number] {
+    if (width < 640) return 'mobile';
+    if (width < 1024) return 'tablet';
+    if (width < 1280) return 'laptop';
+    if (width < 1600) return 'desktop';
+    return 'wide';
+  }
+
+  function update(): void {
+    const width = window.innerWidth;
+    const key = breakpoint(width);
+
+    const viewport = document.querySelector('[data-viewport]');
+    if (viewport) viewport.textContent = `${width} px`;
+    const bp = document.querySelector('[data-breakpoint]');
+    if (bp) bp.textContent = key.charAt(0).toUpperCase() + key.slice(1);
+
+    document.querySelectorAll<HTMLElement>('[data-bp]').forEach((row) => {
+      row.toggleAttribute('data-current', row.dataset['bp'] === key);
+    });
+
+    document.querySelectorAll<HTMLElement>('[data-role]').forEach((sample) => {
+      const out = document.querySelector(`[data-live="${sample.dataset['role']}"]`);
+      if (out) out.textContent = `${parseFloat(getComputedStyle(sample).fontSize).toFixed(1)} px`;
+    });
+
+    const probe = document.querySelector<HTMLElement>('[data-measure]');
+    const probeOut = document.querySelector('[data-measure-out]');
+    if (probe && probeOut)
+      probeOut.textContent = `${Math.round(probe.getBoundingClientRect().height)} px`;
+  }
+
+  let frame = 0;
+  window.addEventListener(
+    'resize',
+    () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(update);
+    },
+    { passive: true },
+  );
+  update();
+
+  document.querySelectorAll<HTMLButtonElement>('[data-demo]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const demo = button.closest<HTMLElement>('.demo');
+      if (!demo) return;
+      const on = !demo.hasAttribute('data-on');
+      demo.toggleAttribute('data-on', on);
+      button.setAttribute('aria-pressed', String(on));
+    });
+  });
+</script>

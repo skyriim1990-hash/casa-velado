@@ -1,0 +1,161 @@
+---
+// R5, Cosecha 2020 (blueprint 3): the product peak and the only light section on the page. It is
+// paper, and that is the whole difference: no card, no frame, no shadow. The facts are a book
+// block, read from the line and the product; [NUMBER] stays until the owner gives it.
+//
+// From 1024px the photograph is in columns 1–7 and runs to the left edge of the screen, the text and
+// the book in columns 9–12. From 640px the photograph is across the top and the text and book are
+// below it in two columns. On a phone: the photograph across the screen, the text, the book as a
+// ruled list and a button at full width.
+import BookLine from '../BookLine.astro';
+import Button from '../Button.astro';
+import Label from '../Label.astro';
+import Photo from '../Photo.astro';
+import { microcopy } from '../../data/site.ts';
+import type { ImageRef } from '../../lib/schemas.ts';
+
+interface Props {
+  image: ImageRef;
+  rows: { label: string; value: string }[];
+  /** “€32.00 per cigar · €310.00 for a numbered box of 10”, worked out from the catalogue. */
+  price: string;
+  href: string;
+}
+
+const { image, rows, price, href } = Astro.props;
+const c = microcopy.home.cosecha;
+---
+
+<section class="cosecha" data-surface="paper" aria-labelledby="cosecha-title">
+  <div class="wrap">
+    <div class="inner">
+      <div class="media" data-reveal>
+        <Photo
+          {image}
+          kind="editorial"
+          sizes="(min-width: 1024px) 60vw, 100vw"
+          alt={image.kind === 'placeholder' ? image.description : ''}
+        />
+      </div>
+
+      <div class="intro">
+        <Label>{c.label}</Label>
+        <h2 id="cosecha-title" data-reveal>
+          {c.title}
+        </h2>
+        <p class="text">{c.text}</p>
+      </div>
+
+      <div class="details">
+        <BookLine {rows} />
+        <p class="price">{price}</p>
+        <Button {href}>{c.cta}</Button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cosecha {
+    padding-block: 0 var(--space-section);
+  }
+
+  /* The width the page's own container has, as a size this section can use to reach the edge of
+     the screen: the margin, or more where the content stops at 1440px. */
+  .wrap {
+    container-type: inline-size;
+  }
+
+  .inner {
+    --bleed: max(var(--margin), (100cqw - var(--w-wide)) / 2);
+    display: grid;
+    gap: var(--space-32);
+    padding-inline: var(--bleed);
+  }
+
+  .media {
+    margin-inline: calc(-1 * var(--bleed));
+  }
+
+  .intro {
+    display: grid;
+    gap: var(--space-16);
+    align-content: start;
+    justify-items: start;
+    padding-block-start: var(--space-16);
+  }
+
+  .text {
+    max-inline-size: 32ch;
+    font-family: var(--font-serif);
+    font-size: var(--fs-lead);
+    line-height: var(--lh-lead);
+  }
+
+  .details {
+    display: grid;
+    gap: var(--space-24);
+    align-content: start;
+    min-inline-size: 0;
+  }
+
+  .price {
+    font-size: var(--fs-ui);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* From 640px: the picture on top; under it the text and the book, side by side. */
+  @media (min-width: 40rem) {
+    .inner {
+      grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+      column-gap: var(--gutter);
+      row-gap: var(--space-48);
+    }
+
+    .media {
+      grid-column: 1 / -1;
+    }
+
+    .intro {
+      grid-column: 1 / span 4;
+      padding-block-start: 0;
+    }
+
+    .details {
+      grid-column: 5 / -1;
+      justify-items: start;
+    }
+
+    .details :global(.book-line) {
+      inline-size: 100%;
+    }
+  }
+
+  /* From 1024px: the picture to the left edge, the text and the book in columns 9–12. */
+  @media (min-width: 64rem) {
+    .cosecha {
+      padding-block-start: var(--space-section);
+    }
+
+    .media {
+      grid-column: 1 / span 7;
+      grid-row: 1 / span 2;
+      margin-inline-end: 0;
+    }
+
+    .intro {
+      grid-column: 9 / -1;
+      grid-row: 1;
+      align-self: end;
+    }
+
+    .details {
+      grid-column: 9 / -1;
+      grid-row: 2;
+    }
+
+    .inner {
+      row-gap: var(--space-32);
+    }
+  }
+</style>

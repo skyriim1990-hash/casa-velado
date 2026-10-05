@@ -1,0 +1,276 @@
+---
+// The site header (blueprint 5.4, 7.3). Below 1024px: the mark on the left, “Cart (n)” and
+// “Menu” on the right. From 1024px: the five pages in full, then the cart. The active page
+// has a 1px gold line under it. The header is fixed and moves by transform only, so nothing
+// shifts when it hides; scripts/shell.ts sets the state on <html>.
+import BrandMark from '../BrandMark.astro';
+import Container from '../Container.astro';
+import { microcopy, nav } from '../../data/site.ts';
+
+interface Props {
+  /** Transparent over a hero until the page has scrolled 80px (the home page). */
+  overlay?: boolean;
+}
+
+const { overlay = false } = Astro.props;
+
+const path = Astro.url.pathname.replace(/\.html$/, '').replace(/\/$/, '') || '/';
+const isActive = (href: string) => path === href || path.startsWith(`${href}/`);
+// “Cart ({n})”: the word, then the live count in its own element.
+const [cartWord] = microcopy.cart.split(' (');
+---
+
+<header class="site-header" data-overlay={overlay ? 'true' : undefined}>
+  <Container class="bar">
+    <a
+      class="brand"
+      href="/"
+      aria-label="Casa Velado, home"
+      aria-current={path === '/' ? 'page' : undefined}
+    >
+      <BrandMark mark="wordmark" class="brand-full" />
+      <BrandMark mark="monogram" class="brand-mono" />
+    </a>
+
+    <nav class="primary" aria-label="Primary">
+      <ul>
+        {nav.primary.map((item) => (
+          <li>
+            <a
+              class="link"
+              href={item.href}
+              aria-current={isActive(item.href) ? 'page' : undefined}
+            >
+              {item.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <div class="tools">
+      <!-- The cart needs JavaScript, so the button appears only when the script has run. -->
+      <button
+        class="tool cart-button"
+        type="button"
+        data-dialog-open="cart"
+        aria-haspopup="dialog"
+        aria-controls="cart-drawer"
+        aria-expanded="false"
+      >
+        {cartWord} (<span data-cart-count>0</span>)
+      </button>
+      <!-- Menu: a button with JavaScript; without it, a link to the footer's list of pages. -->
+      <button
+        class="tool menu-button"
+        type="button"
+        data-dialog-open="menu"
+        aria-haspopup="dialog"
+        aria-controls="site-menu"
+        aria-expanded="false"
+      >
+        {microcopy.menu}
+      </button>
+      <a class="tool menu-link" href="#footer-pages">
+        {microcopy.menu}
+      </a>
+    </div>
+  </Container>
+</header>
+
+<style>
+  /* The header's box is always 72px, so nothing in the layout ever changes size. The
+     compact state (64px, blueprint 5.4) and the hidden state are transforms: the box moves up
+     8px, or away, and the bar inside moves down 4px to stay centred in what is left. */
+  .site-header {
+    position: fixed;
+    inset-block-start: 0;
+    inset-inline: 0;
+    z-index: var(--z-header);
+    box-sizing: border-box;
+    block-size: var(--header-h);
+    background: var(--bg);
+    border-bottom: var(--line) solid transparent;
+    transition: transform var(--dur-base) var(--ease-out);
+  }
+
+  :global(html[data-header='solid']) .site-header,
+  :global(html[data-header='hidden']) .site-header {
+    border-bottom-color: var(--rule);
+  }
+
+  :global(html[data-header='solid']) .site-header,
+  :global(html[data-header='hidden']) .site-header:focus-within {
+    transform: translateY(calc(var(--header-h-compact) - var(--header-h)));
+  }
+
+  :global(html[data-header='hidden']) .site-header:not(:focus-within) {
+    transform: translateY(-100%);
+  }
+
+  /* Over a hero the header is transparent until the page has moved. */
+  :global(html[data-header='top']) .site-header[data-overlay='true'] {
+    background: transparent;
+  }
+
+  .site-header :global(.bar) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    block-size: 100%;
+    gap: var(--space-16);
+    transition: transform var(--dur-base) var(--ease-out);
+  }
+
+  :global(html:not([data-header='top'])) .site-header :global(.bar) {
+    transform: translateY(calc((var(--header-h) - var(--header-h-compact)) / 2));
+  }
+
+  /* ── The mark: the full wordmark from 200px, the monogram where 200px does not fit (under 400px) ── */
+  /* The link is 48px high, the mark inside it smaller (blueprint 7.3: targets from 44px). */
+  .brand {
+    display: flex;
+    align-items: center;
+    flex: none;
+    min-block-size: var(--target);
+    text-decoration: none;
+  }
+
+  .brand :global(.brand-full) {
+    display: none;
+    inline-size: 12.5rem;
+  }
+
+  .brand :global(.brand-mono) {
+    inline-size: 4rem;
+  }
+
+  @media (min-width: 25rem) {
+    .brand :global(.brand-full) {
+      display: block;
+    }
+
+    .brand :global(.brand-mono) {
+      display: none;
+    }
+  }
+
+  /* ── Tools: Cart (n) and Menu ── */
+  .tools {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--space-4);
+    margin-inline-end: calc(-1 * var(--space-12));
+  }
+
+  .tool {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--target);
+    padding-inline: var(--space-12);
+    font-family: var(--font-sans);
+    font-size: var(--fs-ui);
+    line-height: 1;
+    white-space: nowrap;
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  /* Without JavaScript the cart cannot work and the menu is a link; with it, the reverse. */
+  .cart-button,
+  .menu-button {
+    display: none;
+  }
+
+  :global(html.js) .cart-button,
+  :global(html.js) .menu-button {
+    display: inline-flex;
+  }
+
+  :global(html.js) .menu-link {
+    display: none;
+  }
+
+  .primary {
+    display: none;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .tool:hover {
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 6px;
+    }
+  }
+
+  /* ── From 1024px: the pages in full ── */
+  @media (min-width: 64rem) {
+    .primary {
+      display: block;
+      margin-inline-start: auto;
+    }
+
+    .primary ul {
+      display: flex;
+      align-items: center;
+      gap: var(--space-24);
+      list-style: none;
+    }
+
+    .link {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      min-block-size: var(--target);
+      font-size: var(--fs-ui);
+      color: inherit;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 6px;
+      text-decoration-color: transparent;
+      transition: text-decoration-color var(--dur-fast) var(--ease-out);
+    }
+
+    /* The page you are on: a 1px gold line, the one gold element in the header. */
+    .link[aria-current='page']::after {
+      content: '';
+      position: absolute;
+      inset-inline: 0;
+      inset-block-end: 0.5rem;
+      block-size: var(--line);
+      background: var(--gold);
+    }
+
+    .menu-button,
+    .menu-link,
+    :global(html.js) .menu-button {
+      display: none;
+    }
+
+    .tools {
+      margin-inline-start: var(--space-24);
+    }
+  }
+
+  @media (min-width: 64rem) and (hover: hover) and (pointer: fine) {
+    .link:hover {
+      text-decoration-color: currentColor;
+    }
+  }
+
+  /* 1024–1100px: the pages are close. The spacing gives way, never the type. */
+  @media (min-width: 64rem) and (max-width: 68.75rem) {
+    .primary ul {
+      gap: var(--space-16);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .site-header,
+    .site-header :global(.bar) {
+      transition: none;
+    }
+  }
+</style>

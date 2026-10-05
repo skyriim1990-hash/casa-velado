@@ -1,0 +1,231 @@
+---
+// The product card (blueprint 4.5): one link, top to bottom — the photograph (3:2), the line
+// in capitals, the vitola in Garamond, the data (`5 × 50 · ~55 min`), the strength, the price
+// (“From €11.00 →”) and, if the stock calls for one, a single badge. There is no Add button,
+// no favourite and no quick view: the card leads to the product page.
+//
+// Hover (fine pointers only): the title is underlined over 200ms and the arrow moves 4px. The
+// photograph never moves. A sold-out product keeps its price; its photograph is at 60%.
+//
+// The photograph has an empty alt because the text in the same link already names the cigar;
+// reading both would say it twice.
+//
+// It takes resolved records, so it is the same component on the collection page, the product
+// page and the cart. `data-demo-state="hover"` forces hover for /styleguide only.
+import Badge from './Badge.astro';
+import Photo from './Photo.astro';
+import Strength from './Strength.astro';
+import { microcopy } from '../data/site.ts';
+import { formatCardData, formatPrice, fromPriceCents, optionLabel, fill } from '../lib/format.ts';
+import type { Strength as StrengthValue } from '../data/taxonomy.ts';
+import type { Product } from '../lib/schemas.ts';
+
+// Only what the card reads from a line, so any resolved line fits.
+type CardLine = { name: string } & (
+  { kind: 'sampler' } | { kind: 'permanent' | 'edition'; strength: StrengthValue }
+);
+
+interface Props {
+  product: Product;
+  line: CardLine;
+  /** The heading level of the title: 3 under a line's H2. */
+  headingLevel?: 2 | 3 | 4;
+  /** Lazy by default; the first row of a page may load now. */
+  priority?: boolean;
+  class?: string;
+  [attr: `data-${string}`]: string | boolean | undefined;
+}
+
+const {
+  product,
+  line,
+  headingLevel = 3,
+  priority = false,
+  class: className,
+  ...rest
+} = Astro.props;
+
+const Heading = `h${headingLevel}` as 'h3';
+const isCigar = product.kind === 'cigar';
+const title = isCigar ? product.vitola : line.name;
+const data = isCigar ? formatCardData(product) : optionLabel(product.options[0]!, product);
+const strength = line.kind === 'sampler' ? undefined : line.strength;
+// “From €11.00” when there is a choice of options; a single option is just its price.
+const price =
+  product.options.length > 1
+    ? fill(microcopy.fromPrice, { price: formatPrice(fromPriceCents(product)) })
+    : formatPrice(fromPriceCents(product));
+const badge =
+  product.availability === 'limited' ||
+  product.availability === 'low' ||
+  product.availability === 'sold_out'
+    ? product.availability
+    : undefined;
+const soldOut = product.availability === 'sold_out';
+---
+
+<a
+  class:list={['card', { 'card--sold-out': soldOut }, className]}
+  href={`/cigars/${product.id}`}
+  {...rest}
+>
+  <div class="media">
+    <Photo
+      image={product.images.catalog}
+      alt=""
+      kind="productCatalog"
+      sizes="(min-width: 1600px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+      {priority}
+    />
+  </div>
+
+  <div class="text">
+    <div class="head">
+      {isCigar && <p class="line">{line.name}</p>}
+      <Heading class="title">{title}</Heading>
+    </div>
+    <div class="facts">
+      <p class="data">{data}</p>
+      {strength && <Strength value={strength} />}
+    </div>
+    <p class="price">
+      <span>{price}</span>
+      <span class="arrow" aria-hidden="true">
+        →
+      </span>
+    </p>
+    {badge && <Badge status={badge} class="badge" />}
+  </div>
+</a>
+
+<style>
+  .card {
+    display: grid;
+    gap: var(--space-16);
+    align-content: start;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .media {
+    display: block;
+  }
+
+  .card--sold-out .media {
+    opacity: 0.6;
+  }
+
+  /* At 60% the placeholder's --text-2 would fall under 4.5 : 1; --text keeps it above (5.3 : 1).
+     A real photograph has no text, so this only concerns the stand-in. */
+  .card--sold-out .media :global(.placeholder) {
+    color: var(--text);
+  }
+
+  .text {
+    display: grid;
+    gap: var(--space-8);
+    justify-items: start;
+  }
+
+  .head {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .line {
+    font-family: var(--font-sans);
+    font-size: var(--fs-label);
+    font-weight: var(--fw-medium);
+    line-height: var(--lh-label);
+    letter-spacing: var(--ls-label);
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .title {
+    font-size: var(--fs-card);
+    font-weight: var(--fw-medium);
+    line-height: var(--lh-h3);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+    text-decoration-color: transparent;
+    transition: text-decoration-color var(--dur-image) var(--ease-out);
+  }
+
+  .facts {
+    display: grid;
+    gap: var(--space-8);
+    justify-items: start;
+  }
+
+  .data {
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .price {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-8);
+    font-size: var(--fs-button);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .arrow {
+    display: inline-block;
+    transition: transform var(--dur-image) var(--ease-out);
+  }
+
+  .badge {
+    margin-block-start: var(--space-4);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .card:hover .title,
+    .card[data-demo-state='hover'] .title {
+      text-decoration-color: currentColor;
+    }
+
+    .card:hover .arrow,
+    .card[data-demo-state='hover'] .arrow {
+      transform: translateX(4px);
+    }
+  }
+
+  /* A phone: the card is compact, the photograph and two rows of text. The line and the
+     title share the first row; the data, the strength and the price share the second. */
+  @media (max-width: 639px) {
+    .text {
+      grid-template-columns: 1fr;
+      gap: var(--space-4) var(--space-16);
+    }
+
+    .head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: var(--space-4) var(--space-12);
+    }
+
+    .facts {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-4) var(--space-16);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .title,
+    .arrow {
+      transition: none;
+    }
+
+    .card:hover .arrow,
+    .card[data-demo-state='hover'] .arrow {
+      transform: none;
+    }
+  }
+</style>

@@ -1,0 +1,129 @@
+---
+// R6, the journal (blueprint 3): the house's voice and depth. A label and no heading, the three
+// latest entries, one link to all of them. From 1024px the large entry (4:5) takes columns 1–7 and
+// the two small ones (3:2) are stacked in 9–12. From 640px the large one is across the page and
+// the small ones side by side. On a phone the large one is across the page and the small ones are
+// compact rows: the picture at 35% on the left, the title on the right. It is not a carousel.
+// The entries are the real ones, in the order the journal keeps; their dates stay [DATE] until
+// the owner gives them, and an entry still to be written has no excerpt.
+import ArticleCard from '../ArticleCard.astro';
+import Container from '../Container.astro';
+import Label from '../Label.astro';
+import TextLink from '../TextLink.astro';
+import { microcopy } from '../../data/site.ts';
+import type { Article } from '../../lib/schemas.ts';
+
+interface Props {
+  articles: { id: string; data: Article }[];
+}
+
+const { articles } = Astro.props;
+const [large, ...small] = articles;
+const c = microcopy.home.journal;
+---
+
+<section class="journal" aria-label={c.label}>
+  <Container grid>
+    <div class="head" data-reveal>
+      <Label>{c.label}</Label>
+    </div>
+
+    {large && (
+      <div class="large">
+        <ArticleCard id={large.id} article={large.data} variant="large" headingLevel={2} />
+      </div>
+    )}
+
+    <div class="small">
+      {small.map((entry) => (
+        <ArticleCard id={entry.id} article={entry.data} variant="small" headingLevel={2} />
+      ))}
+    </div>
+
+    <p class="cta">
+      <TextLink href="/journal" arrow>
+        {c.cta}
+      </TextLink>
+    </p>
+  </Container>
+</section>
+
+<style>
+  .journal {
+    padding-block: var(--space-section);
+  }
+
+  .head,
+  .large,
+  .small,
+  .cta {
+    grid-column: 1 / -1;
+    min-inline-size: 0;
+  }
+
+  .head {
+    margin-block-end: var(--space-32);
+  }
+
+  .small {
+    display: grid;
+    gap: var(--space-24);
+    margin-block-start: var(--space-32);
+  }
+
+  .cta {
+    margin-block-start: var(--space-32);
+  }
+
+  /* A phone: the small entries are rows, the picture at 35% and the title beside it. */
+  @media (max-width: 639px) {
+    .small :global(.card.card) {
+      grid-template-columns: 35% minmax(0, 1fr);
+      align-items: start;
+      gap: var(--space-16);
+    }
+
+    /* The picture is too small to carry its stand-in words. */
+    .small :global(.card.card .placeholder) {
+      display: none;
+    }
+
+    .small :global(.card.card .title) {
+      font-size: var(--fs-h4);
+      line-height: var(--lh-h4);
+    }
+  }
+
+  @media (min-width: 40rem) {
+    .small {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--gutter);
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .head {
+      grid-column: 1 / span 7;
+    }
+
+    .large {
+      grid-column: 1 / span 7;
+      grid-row: 2 / span 2;
+    }
+
+    .small {
+      grid-column: 9 / -1;
+      grid-row: 2;
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-48);
+      margin-block-start: 0;
+    }
+
+    .cta {
+      grid-column: 9 / -1;
+      grid-row: 3;
+      align-self: end;
+      margin-block-start: 0;
+    }
+  }
+</style>

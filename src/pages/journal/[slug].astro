@@ -1,0 +1,254 @@
+---
+// A journal entry (blueprint 2.3, 4.3): one template for all six, read from the collection. It is
+// a printed page: paper, a text column of 680px, a cover that is wider than the text, and nothing
+// at the side. In order: the way back, the category, the date and the reading time, the title, the
+// excerpt if there is one, the cover, the body, “The cigar in this entry” only if the entry names
+// a cigar, two more entries and one way on.
+//
+// The words are the entry's own: the date stays [DATE] and the excerpt is shown only where it is
+// written; the reading time is counted from the body. No author, no date that the record does not
+// have, no counters, no comments. The page is static HTML and has no script.
+import { getEntry, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import ArticleCard from '../../components/ArticleCard.astro';
+import Container from '../../components/Container.astro';
+import Label from '../../components/Label.astro';
+import Photo from '../../components/Photo.astro';
+import ProductCard from '../../components/ProductCard.astro';
+import TextLink from '../../components/TextLink.astro';
+import { microcopy } from '../../data/site.ts';
+import { getArticles, getLine, getProduct, getRelatedArticles } from '../../lib/catalogue.ts';
+import { fill, formatDate, readingMinutes } from '../../lib/format.ts';
+import { absoluteUrl } from '../../lib/site.ts';
+
+export async function getStaticPaths() {
+  return (await getArticles()).map((entry) => ({ params: { slug: entry.id } }));
+}
+
+const { slug } = Astro.params;
+const entry = await getEntry('journal', slug);
+if (!entry) throw new Error(`Unknown journal entry “${slug}”`);
+const { Content } = await render(entry);
+const article = entry.data;
+const c = microcopy.journal;
+
+const minutes = readingMinutes(entry.body ?? '');
+const related = await getRelatedArticles(entry.id, 2);
+
+// “The cigar in this entry”: only when the record names one.
+const product = article.relatedProduct ? await getProduct(article.relatedProduct) : undefined;
+const productLine = product ? await getLine(product.line) : undefined;
+
+// The process entries lead to Tobacco, the others to the cigars.
+const toTobacco = article.category === 'Harvest' || article.category === 'Craft';
+
+const description =
+  article.excerpt ?? `${article.category}: an entry from the Casa Velado journal.`;
+const url = absoluteUrl(Astro.url.pathname, Astro.site);
+// Structured data only from what the record has: no author, no date, no publisher.
+const ld = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: article.title,
+  ...(article.excerpt ? { description: article.excerpt } : {}),
+  articleSection: article.category,
+  inLanguage: 'en-GB',
+  ...(url ? { mainEntityOfPage: url } : {}),
+}).replaceAll('<', '\\u003c');
+---
+
+<Base title={article.title} {description}>
+  <script slot="head" type="application/ld+json" set:html={ld} />
+  <div class="paper" data-surface="paper">
+    <article>
+      <header class="top">
+        <Container width="text">
+          <a class="back" href="/journal">
+            <span aria-hidden="true">←</span>
+            {c.back}
+          </a>
+          <Label class="meta">
+            {article.category} · {formatDate(article.date)} · {fill(c.readingTime, { n: minutes })}
+          </Label>
+          <h1>{article.title}</h1>
+          {article.excerpt && <p class="lead">{article.excerpt}</p>}
+        </Container>
+      </header>
+
+      <div class="cover">
+        <Container>
+          <Photo
+            image={article.cover}
+            ratio="3:2"
+            kind="articleCover"
+            sizes="(min-width: 1024px) 80vw, 100vw"
+            priority
+          />
+        </Container>
+      </div>
+
+      <div class="prose">
+        <Container width="text">
+          <Content />
+        </Container>
+      </div>
+    </article>
+
+    {product && productLine && (
+      <section class="product" aria-labelledby="product-title">
+        <Container width="text">
+          <h2 id="product-title">{c.cigarInEntry}</h2>
+          <ProductCard {product} line={productLine} headingLevel={3} />
+        </Container>
+      </section>
+    )}
+
+    {related.length > 0 && (
+      <section class="more" aria-labelledby="more-title">
+        <Container>
+          <h2 id="more-title">{c.more}</h2>
+          <ul>
+            {related.map((item) => (
+              <li>
+                <ArticleCard id={item.id} article={item.data} variant="small" headingLevel={3} />
+              </li>
+            ))}
+          </ul>
+        </Container>
+      </section>
+    )}
+
+    <div class="end">
+      <Container width="text">
+        {toTobacco ? (
+          <TextLink href="/tobacco" arrow>
+            {c.toTobacco}
+          </TextLink>
+        ) : (
+          <TextLink href="/cigars" arrow>
+            {c.toCigars}
+          </TextLink>
+        )}
+      </Container>
+    </div>
+  </div>
+</Base>
+
+<style>
+  .top {
+    padding-block: var(--space-24) var(--space-32);
+  }
+
+  .top :global(.container) {
+    display: grid;
+    gap: var(--space-16);
+    justify-items: start;
+  }
+
+  .back {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-8);
+    min-block-size: var(--target);
+  }
+
+  h1 {
+    font-size: var(--fs-h1);
+    line-height: var(--lh-h1);
+  }
+
+  .lead {
+    font-family: var(--font-serif);
+    font-size: var(--fs-lead);
+    line-height: var(--lh-lead);
+    color: var(--text-2);
+  }
+
+  /* The cover is wider than the text: the whole content width, and on a large screen no taller
+     than the window. */
+  .cover :global(.photo) {
+    max-block-size: 80svh;
+  }
+
+  /* The body (Markdown): a reading column, Garamond-sized text, quiet headings. */
+  .prose {
+    padding-block: var(--space-48);
+    font-size: var(--fs-article);
+    line-height: var(--lh-article);
+  }
+
+  .prose :global(.container > * + *) {
+    margin-block-start: var(--space-24);
+  }
+
+  .prose :global(h2) {
+    margin-block-start: var(--space-48);
+    font-size: var(--fs-h3);
+    line-height: var(--lh-h3);
+  }
+
+  .prose :global(h2 + p) {
+    margin-block-start: var(--space-12);
+  }
+
+  .prose :global(h3) {
+    margin-block-start: var(--space-32);
+    font-size: var(--fs-h4);
+    line-height: var(--lh-h4);
+  }
+
+  .prose :global(ol),
+  .prose :global(ul) {
+    padding-inline-start: 1.5em;
+  }
+
+  .prose :global(li + li) {
+    margin-block-start: var(--space-12);
+  }
+
+  /* The one emphasised quotation of an entry: serif, larger, set between two rules. */
+  .prose :global(blockquote) {
+    margin-inline: 0;
+    padding-block: var(--space-24);
+    border-block: var(--line) solid var(--rule);
+    font-family: var(--font-serif);
+    font-size: var(--fs-h3);
+    font-style: italic;
+    line-height: var(--lh-h3);
+  }
+
+  .prose :global(blockquote p) {
+    margin: 0;
+  }
+
+  .product,
+  .more {
+    padding-block: var(--space-48);
+    border-block-start: var(--line) solid var(--rule);
+  }
+
+  .product h2,
+  .more h2 {
+    margin-block-end: var(--space-24);
+    font-size: var(--fs-h3);
+    line-height: var(--lh-h3);
+  }
+
+  .more ul {
+    display: grid;
+    gap: var(--space-32) var(--gutter);
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (min-width: 40rem) {
+    .more ul {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .end {
+    padding-block: var(--space-32) var(--space-96);
+    border-block-start: var(--line) solid var(--rule);
+  }
+</style>

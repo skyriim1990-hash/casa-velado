@@ -1,0 +1,138 @@
+---
+// One line in the “By line” view (blueprint 4.4): its name as H2, the sentence about its
+// character, its strength, wrapper and harvest as book-line rows, a link to its place in
+// Tobacco, and below them the cards of its sizes. The cards are the same ProductCard as in the
+// “All” view; the script moves them between the two, so there is one copy of each.
+//
+// The Muestrario is a line with no blend, so it has no strength, wrapper, harvest or Tobacco
+// link; it shows the sentence the data gives it.
+import BookLine from '../BookLine.astro';
+import Container from '../Container.astro';
+import ProductCard from '../ProductCard.astro';
+import TextLink from '../TextLink.astro';
+import ProductGrid from './ProductGrid.astro';
+import { microcopy } from '../../data/site.ts';
+import { itemAttrs, type Item } from '../../lib/collection.ts';
+import type { Line, Product } from '../../lib/schemas.ts';
+
+interface Props {
+  line: Line;
+  products: { product: Product; item: Item }[];
+  /** The wrapper as written for the ledger: “Nicaragua Habano (Jalapa)”. */
+  wrapper?: string | undefined;
+  /** Where “About this line” goes. */
+  aboutHref?: string | undefined;
+}
+
+const { line, products, wrapper, aboutHref } = Astro.props;
+const blended = line.kind !== 'sampler';
+const sentence = line.kind === 'sampler' ? line.description : line.tagline;
+const rows =
+  line.kind === 'sampler'
+    ? []
+    : [
+        { label: 'Strength', strength: line.strength },
+        { label: 'Wrapper', value: wrapper ?? '' },
+        { label: 'Harvest', value: String(line.harvestYear) },
+      ];
+---
+
+<section class="line" id={line.id} aria-labelledby={`${line.id}-title`} data-line-section={line.id}>
+  <Container>
+    <div class="head">
+      <div class="title">
+        <h2 id={`${line.id}-title`}>{line.name}</h2>
+        <p class="sentence">{sentence}</p>
+      </div>
+      {blended && (
+        <div class="facts">
+          <BookLine {rows} />
+          {aboutHref && (
+            <TextLink href={aboutHref} arrow>
+              {microcopy.collection.aboutLine}
+            </TextLink>
+          )}
+        </div>
+      )}
+    </div>
+
+    <ProductGrid data-grid>
+      {products.map(({ product, item }) => (
+        <li data-item {...itemAttrs(item)}>
+          <ProductCard {product} {line} />
+        </li>
+      ))}
+    </ProductGrid>
+  </Container>
+</section>
+
+<style>
+  .line {
+    padding-block: var(--space-48);
+    /* A jump to the line lands below the header and the toolbar. */
+    scroll-margin-block-start: calc(var(--header-h) + var(--toolbar-h));
+  }
+
+  .head {
+    display: grid;
+    gap: var(--space-24);
+    margin-block-end: var(--space-32);
+  }
+
+  .title {
+    display: grid;
+    gap: var(--space-12);
+    align-content: start;
+  }
+
+  .sentence {
+    max-inline-size: 36ch;
+    font-family: var(--font-serif);
+    font-size: var(--fs-lead);
+    line-height: var(--lh-lead);
+    color: var(--text-2);
+  }
+
+  .facts {
+    display: grid;
+    gap: var(--space-8);
+    justify-items: start;
+    align-content: start;
+  }
+
+  .facts :global(.book-line) {
+    inline-size: 100%;
+  }
+
+  /* From 640px the name sits on the left, the facts on the right; from 1024px the facts start
+     at the seventh column and leave the sixth empty. */
+  @media (min-width: 40rem) {
+    .head {
+      grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+      column-gap: var(--gutter);
+      margin-block-end: var(--space-48);
+    }
+
+    .title {
+      grid-column: 1 / span 4;
+    }
+
+    .facts {
+      grid-column: 5 / -1;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .line {
+      padding-block: var(--space-64);
+    }
+
+    .title {
+      grid-column: 1 / span 5;
+    }
+
+    .facts {
+      grid-column: 7 / -1;
+    }
+  }
+</style>

@@ -1,0 +1,667 @@
+---
+// The Stage 6 sections of /styleguide: every core component in its states. Specimens use the
+// real components; a forced state (data-demo-state) is the component's own rule, not a copy.
+// Products and articles come from the canonical data. Availability is overridden on two
+// specimens only, because the catalogue has no product that is nearly out or sold out, and the
+// card has to be seen in those states. Nothing here adds a product or a line.
+import ArticleCard from '../ArticleCard.astro';
+import Badge from '../Badge.astro';
+import BookLine from '../BookLine.astro';
+import Button from '../Button.astro';
+import Field from '../Field.astro';
+import Label from '../Label.astro';
+import Photo from '../Photo.astro';
+import ProductCard from '../ProductCard.astro';
+import Strength from '../Strength.astro';
+import TextLink from '../TextLink.astro';
+import Section from './Section.astro';
+import { STRENGTH_WORDS } from '../../data/taxonomy.ts';
+import { fill } from '../../lib/format.ts';
+import { microcopy } from '../../data/site.ts';
+import {
+  getArticles,
+  getLine,
+  getPhoto,
+  getProduct,
+  getProductLedger,
+} from '../../lib/catalogue.ts';
+import type { Product } from '../../lib/schemas.ts';
+
+const galera = await getProduct('galera-robusto');
+const cosecha = await getProduct('cosecha-2020-toro');
+const gorda = await getProduct('galera-corona-gorda');
+const muestrario = await getProduct('muestrario');
+const galeraLine = await getLine(galera.line);
+const cosechaLine = await getLine(cosecha.line);
+const gordaLine = await getLine(gorda.line);
+const muestrarioLine = await getLine(muestrario.line);
+const low = { ...gorda, availability: 'low' } as Product;
+const soldOut = { ...galera, availability: 'sold_out' } as Product;
+
+const ledger = await getProductLedger(galera);
+const articles = await getArticles();
+const [large, ...others] = articles;
+const small = others[0];
+
+const hero = (await getPhoto('hero-galera')).image;
+const field = (await getPhoto('tobacco-field')).image;
+const hands = (await getPhoto('name-hands')).image;
+const crops = [
+  ['21:9', hero],
+  ['16:9', field],
+  ['4:3', galera.kind === 'cigar' ? galera.images.box : hero],
+  ['3:2', galera.images.catalog],
+  ['1:1', galera.kind === 'cigar' ? galera.images.band : hero],
+  ['4:5', hands],
+] as const;
+
+const strengths = [1, 2, 3, 4, 5] as const;
+---
+
+<!-- Buttons -->
+<Section id="buttons" label="09 · Buttons" title="Primary, secondary, and the text button">
+  <p class="note">
+    The primary is ivory on the page colour: 48px high, 28px of padding, square, Plex 500 at 15px.
+    Hover is for fine pointers only and takes 150ms; pressing moves it down 1px; disabled is 40% and
+    shows <code>not-allowed</code>. Secondary is an outline that turns to --text on hover. The text
+    button is a link in the shape of a button. Below 640px the primary takes the full width. The
+    first three columns are real: hover, press and Tab to them. The forced states use the
+    component's own rules.
+  </p>
+  <table class="matrix">
+    <caption class="sr">Button states</caption>
+    <thead>
+      <tr>
+        <th scope="col">Variant</th>
+        <th scope="col">Default</th>
+        <th scope="col">Hover</th>
+        <th scope="col">Focus-visible</th>
+        <th scope="col">Active</th>
+        <th scope="col">Disabled</th>
+      </tr>
+    </thead>
+    <tbody>
+      {(['primary', 'secondary', 'text'] as const).map((variant) => (
+        <tr>
+          <th scope="row" class="matrix-name">
+            {variant}
+          </th>
+          <td data-cell="Default">
+            <Button {variant}>Add to cart</Button>
+          </td>
+          <td data-cell="Hover">
+            <Button {variant} data-demo-state="hover">
+              Add to cart
+            </Button>
+          </td>
+          <td data-cell="Focus-visible">
+            <Button {variant} data-demo-state="focus">
+              Add to cart
+            </Button>
+          </td>
+          <td data-cell="Active">
+            <Button {variant} data-demo-state="active">
+              Add to cart
+            </Button>
+          </td>
+          <td data-cell="Disabled">
+            <Button {variant} disabled>
+              Add to cart
+            </Button>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+  <div class="spec-row">
+    <div class="spec">
+      <Label>As a link</Label>
+      <Button href="/cigars">Browse the cigars</Button>
+    </div>
+    <div class="spec">
+      <Label>Submit</Label>
+      <Button type="submit" variant="secondary">
+        Send message
+      </Button>
+    </div>
+  </div>
+</Section>
+
+<!-- Links -->
+<Section id="links" label="10 · Links" title="One underline, four pixels below">
+  <p class="note">
+    A link is an <code>&lt;a&gt;</code> with a 1px underline, 4px below, at 40% of the text colour;
+    on hover it becomes 100% (fine pointers only). The arrow is the character →, hidden from screen
+    readers. Gold appears only as the hover colour of a link, and only where nothing else on the
+    screen is gold. A visited link looks the same: the blueprint defines no visited state.
+  </p>
+  <div class="spec-row">
+    <div class="spec">
+      <Label>Normal</Label>
+      <p>
+        <TextLink href="/tobacco" arrow>
+          How we work
+        </TextLink>
+      </p>
+    </div>
+    <div class="spec">
+      <Label>Hover</Label>
+      <p>
+        <TextLink href="/tobacco" arrow data-demo-state="hover">
+          How we work
+        </TextLink>
+      </p>
+    </div>
+    <div class="spec">
+      <Label>Focus-visible</Label>
+      <p>
+        <TextLink href="/tobacco" arrow data-demo-state="focus">
+          How we work
+        </TextLink>
+      </p>
+    </div>
+    <div class="spec">
+      <Label>Gold hover (use once per screen)</Label>
+      <p>
+        <TextLink href="/tobacco" arrow gold data-demo-state="hover">
+          The story of the house
+        </TextLink>
+      </p>
+    </div>
+  </div>
+  <div class="spec">
+    <Label>Inline</Label>
+    <p class="prose">
+      For the first years we sold our leaf to other houses. You can read how the leaf is cured in
+      <TextLink href="/tobacco">the tobacco chapters</TextLink>, or see the
+      <TextLink href="/cigars">cigars</TextLink> we make from it.
+    </p>
+  </div>
+</Section>
+
+<!-- Fields -->
+<Section id="fields" label="11 · Fields" title="A label above, never a placeholder alone">
+  <p class="note">
+    Text, email and select. The label is above the control; the control is 48px high with a 1px
+    border and square corners; focus turns the border to --text and adds the focus ring. An error
+    turns the border to --error, sets <code>aria-invalid</code>, and gives a sentence beneath that
+    <code>aria-describedby</code> points to, with the hint. A field is required unless it says
+    “(optional)”. Disabled is 40%.
+  </p>
+  <div class="fields">
+    <Field id="sg-text" name="name" label="Name" autocomplete="name" />
+    <Field id="sg-hint" name="guests" label="Guests" hint="Between 1 and 6." />
+    <Field
+      id="sg-email"
+      name="email"
+      type="email"
+      label="Email"
+      autocomplete="email"
+      placeholder="name@example.com"
+    />
+    <Field id="sg-optional" name="note" label="Note" optional />
+    <Field id="sg-hover" name="hover" label="Hover" demoState="hover" />
+    <Field id="sg-focus" name="focus" label="Focus-visible" demoState="focus" />
+    <Field
+      id="sg-error"
+      name="error"
+      type="email"
+      label="Email"
+      error={microcopy.forms.errors.emailIncomplete}
+      value="name@"
+    />
+    <Field
+      id="sg-error-empty"
+      name="error-empty"
+      type="email"
+      label="Email"
+      error={microcopy.forms.errors.email}
+    />
+    <Field id="sg-disabled" name="disabled" label="Name" disabled value="Not available" />
+    <Field
+      id="sg-select"
+      name="time"
+      type="select"
+      label="Time"
+      placeholder="Choose a time"
+      options={[
+        { value: '10', label: '10:00' },
+        { value: '11', label: '11:00' },
+        { value: '12', label: '12:00' },
+      ]}
+    />
+    <Field
+      id="sg-select-error"
+      name="time-error"
+      type="select"
+      label="Time"
+      placeholder="Choose a time"
+      error={microcopy.forms.errors.date}
+      options={[
+        { value: '10', label: '10:00' },
+        { value: '11', label: '11:00' },
+      ]}
+    />
+    <Field
+      id="sg-select-disabled"
+      name="time-off"
+      type="select"
+      label="Time"
+      disabled
+      value="10"
+      options={[{ value: '10', label: '10:00' }]}
+    />
+  </div>
+</Section>
+
+<!-- Badges -->
+<Section id="badges" label="12 · Badges" title="Words, not colours">
+  <p class="note">
+    Plex 12px in capitals, a 1px border, square. A product card has at most one. Each is told by its
+    words alone; “Limited” has the same border as the others, so gold stays a trace.
+  </p>
+  <div class="spec-row">
+    <div class="spec">
+      <Label>Limited</Label>
+      <Badge status="limited" />
+    </div>
+    <div class="spec">
+      <Label>Few remaining</Label>
+      <Badge status="low" />
+    </div>
+    <div class="spec">
+      <Label>Sold out</Label>
+      <Badge status="sold_out" />
+    </div>
+  </div>
+</Section>
+
+<!-- Strength -->
+<Section id="strength" label="13 · Strength" title="Five bars and a word">
+  <p class="note">
+    Bars of 14 × 3px with 3px between: filled --text, empty --rule. The word sits beside them. A
+    screen reader gets one sentence in place of both, shown under each specimen.
+  </p>
+  <ul class="strengths">
+    {strengths.map((n) => (
+      <li class="spec">
+        <Strength value={n} />
+        <p class="caption">
+          {fill(microcopy.strengthSr, { n, word: STRENGTH_WORDS[n].toLowerCase() })}
+        </p>
+      </li>
+    ))}
+  </ul>
+</Section>
+
+<!-- Book line -->
+<Section id="bookline" label="14 · Book line" title="A label, a value, a rule">
+  <p class="note">
+    Rows of 44–48px: the label in Plex 14px, the value in Plex 15px with tabular figures, a 1px rule
+    beneath. Only for real data. On a phone, a value longer than 24 characters puts its label above
+    it; resize below 640px to see it on the ledger of the Galera Robusto.
+  </p>
+  <div class="pair">
+    <div class="spec" data-surface="dark">
+      <Label>Short, numeric and long values</Label>
+      <BookLine
+        rows={[
+          { label: 'Harvest', value: '2022' },
+          { label: 'Smoking time', value: '~55 min' },
+          { label: 'Total', value: '€11.00' },
+          { label: 'Wrapper', value: 'Nicaragua Habano (Jalapa)' },
+        ]}
+      />
+    </div>
+    <div class="spec paper" data-surface="paper">
+      <Label>On paper</Label>
+      <BookLine
+        rows={[
+          { label: 'Harvest', value: '2022' },
+          { label: 'Smoking time', value: '~55 min' },
+          { label: 'Total', value: '€11.00' },
+          { label: 'Wrapper', value: 'Nicaragua Habano (Jalapa)' },
+        ]}
+      />
+    </div>
+  </div>
+  <div class="spec paper" data-surface="paper">
+    <Label>The ledger of the Galera Robusto, from the data</Label>
+    <BookLine rows={ledger.map((r) => ({ label: r.label, value: r.value, html: true }))} />
+  </div>
+</Section>
+
+<!-- Product card -->
+<Section id="product-card" label="15 · Product card" title="One link, a photograph and four lines">
+  <p class="note">
+    Section 4.5: the photograph (3:2), the line, the vitola, the data, the strength, the price and
+    at most one badge. No Add button, no favourite, no quick view. On hover the title is underlined
+    over 200ms and the arrow moves 4px; the photograph does not move. A sold-out product keeps its
+    price and shows its photograph at 60%. The grid is 1 / 2 / 3 / 3 / 4 columns (section 7.3). The
+    records are the real Galera Robusto, Cosecha 2020 Toro and Muestrario; the “few remaining” and
+    “sold out” specimens override availability, because no product in the catalogue has either.
+  </p>
+  <div class="cards">
+    <div class="spec">
+      <Label>Normal</Label>
+      <ProductCard product={galera} line={galeraLine} />
+    </div>
+    <div class="spec">
+      <Label>Hover</Label>
+      <ProductCard product={galera} line={galeraLine} data-demo-state="hover" />
+    </div>
+    <div class="spec">
+      <Label>Focus-visible</Label>
+      <ProductCard product={galera} line={galeraLine} data-demo-state="focus" />
+    </div>
+    <div class="spec">
+      <Label>Limited</Label>
+      <ProductCard product={cosecha} line={cosechaLine} />
+    </div>
+    <div class="spec">
+      <Label>Few remaining (state specimen)</Label>
+      <ProductCard product={low} line={gordaLine} />
+    </div>
+    <div class="spec">
+      <Label>Sold out (state specimen)</Label>
+      <ProductCard product={soldOut} line={galeraLine} />
+    </div>
+    <div class="spec">
+      <Label>Muestrario</Label>
+      <ProductCard product={muestrario} line={muestrarioLine} />
+    </div>
+  </div>
+</Section>
+
+<!-- Article card -->
+<Section id="article-card" label="16 · Article card" title="A cover, a line, a title">
+  <p class="note">
+    The cover is 4:5 on the large card and 3:2 on the small. The line gives the category and the
+    date; the title is Garamond H3; the large card shows the excerpt. On hover the cover scales to
+    1.03 over 800ms, the one photograph on the site that moves, and not under reduced motion. The
+    entries are the real ones; their dates and excerpts are not written yet, so the date shows
+    [DATE], and the large specimen shows [EXCERPT] in the place an excerpt will take.
+  </p>
+  {large && small && (
+    <div class="articles">
+      <div class="spec">
+        <Label>Large</Label>
+        <ArticleCard id={large.id} article={large.data} variant="large" excerpt="[EXCERPT]" />
+      </div>
+      <div class="spec">
+        <Label>Large, hover</Label>
+        <ArticleCard
+          id={large.id}
+          article={large.data}
+          variant="large"
+          excerpt="[EXCERPT]"
+          data-demo-state="hover"
+        />
+      </div>
+      <div class="spec">
+        <Label>Small</Label>
+        <ArticleCard id={small.id} article={small.data} variant="small" />
+      </div>
+      <div class="spec">
+        <Label>Small, hover</Label>
+        <ArticleCard id={small.id} article={small.data} variant="small" data-demo-state="hover" />
+      </div>
+      <div class="spec">
+        <Label>Small, focus-visible</Label>
+        <ArticleCard id={small.id} article={small.data} variant="small" data-demo-state="focus" />
+      </div>
+    </div>
+  )}
+</Section>
+
+<!-- Photo -->
+<Section id="photo" label="17 · Photo and crops" title="A fixed ratio on a plain ground">
+  <p class="note">
+    One component for every photograph. Until approved photographs exist it shows a block of the
+    right ratio on --surface-2 with <code>[PHOTO: …]</code>; later the same record points to a file
+    and the build makes WebP at the widths of its kind, with srcset and sizes. No border, shadow,
+    filter, overlay or blur. A frame with three crops uses them by width: the first at 1024px and
+    up, the second at 640–1023px, the third below 640px. Resize to see the last specimen change.
+  </p>
+  <div class="ratios">
+    {crops.map(([ratio, image]) => (
+      <div class="spec">
+        <Label>{ratio}</Label>
+        <Photo {image} {ratio} alt="" />
+      </div>
+    ))}
+  </div>
+  <div class="spec">
+    <Label>Three crops by width: {hero.ratios.join(' · ')}</Label>
+    <Photo image={hero} />
+  </div>
+</Section>
+
+<style>
+  .note {
+    max-inline-size: var(--measure);
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--text-2);
+  }
+
+  code {
+    font-family: var(--font-sans);
+    font-size: 0.9em;
+    color: var(--text-2);
+  }
+
+  .spec {
+    display: grid;
+    gap: var(--space-12);
+    align-content: start;
+    justify-items: stretch;
+    min-inline-size: 0;
+  }
+
+  /* Small things keep their own width; cards, photographs and ledgers fill the column. */
+  .spec > :global(.btn),
+  .spec > :global(.badge),
+  .spec > :global(.strength),
+  .spec > p {
+    justify-self: start;
+  }
+
+  .spec > :global(*) {
+    min-inline-size: 0;
+  }
+
+  .spec-row {
+    display: grid;
+    gap: var(--space-24) var(--gutter);
+  }
+
+  .caption {
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--text-2);
+  }
+
+  .prose {
+    max-inline-size: var(--measure);
+  }
+
+  /* The button states: a table on a wide screen, a list of labelled cells on a narrow one. */
+  .sr {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .matrix,
+  .matrix tbody,
+  .matrix tr,
+  .matrix th,
+  .matrix td {
+    display: block;
+  }
+
+  .matrix thead {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .matrix tr {
+    display: grid;
+    gap: var(--space-16);
+    padding-block: var(--space-24);
+    border-bottom: var(--line) solid var(--rule);
+  }
+
+  .matrix td {
+    display: grid;
+    gap: var(--space-8);
+    justify-items: start;
+  }
+
+  .matrix td::before {
+    content: attr(data-cell);
+    font-size: var(--fs-label);
+    font-weight: var(--fw-medium);
+    letter-spacing: var(--ls-label);
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .matrix-name {
+    font-family: var(--font-serif);
+    font-size: var(--fs-h3);
+    font-weight: var(--fw-regular);
+    text-transform: capitalize;
+  }
+
+  @media (min-width: 64rem) {
+    .matrix {
+      display: table;
+      inline-size: 100%;
+      border-collapse: collapse;
+    }
+
+    .matrix thead {
+      position: static;
+      inline-size: auto;
+      block-size: auto;
+      overflow: visible;
+      clip-path: none;
+      display: table-header-group;
+    }
+
+    .matrix tbody {
+      display: table-row-group;
+    }
+
+    .matrix tr {
+      display: table-row;
+      padding: 0;
+    }
+
+    .matrix th,
+    .matrix td {
+      display: table-cell;
+      padding: var(--space-24) var(--gutter) var(--space-24) 0;
+      vertical-align: middle;
+      text-align: left;
+      border-bottom: var(--line) solid var(--rule);
+    }
+
+    .matrix thead th {
+      padding-block: 0 var(--space-12);
+      font-size: var(--fs-label);
+      font-weight: var(--fw-medium);
+      letter-spacing: var(--ls-label);
+      text-transform: uppercase;
+      color: var(--text-3);
+      border-bottom: var(--line) solid var(--border);
+    }
+
+    .matrix td::before {
+      display: none;
+    }
+
+    .matrix td {
+      display: table-cell;
+    }
+  }
+
+  .fields,
+  .strengths,
+  .pair,
+  .ratios {
+    display: grid;
+    gap: var(--space-32) var(--gutter);
+    list-style: none;
+  }
+
+  .cards,
+  .articles {
+    display: grid;
+    gap: var(--space-48) var(--gutter);
+  }
+
+  .paper {
+    padding: var(--space-24);
+  }
+
+  @media (min-width: 40rem) {
+    .spec-row {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .fields,
+    .pair,
+    .ratios,
+    .articles {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .strengths {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .cards {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .spec-row {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .fields {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .ratios {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .strengths {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .cards {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .articles {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 100rem) {
+    .cards {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+</style>

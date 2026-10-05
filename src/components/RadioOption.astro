@@ -1,0 +1,126 @@
+---
+// One choice of a radio group, set as a line of the book (blueprint 4.6, 5.4): a native radio
+// drawn as the ○ of the blueprint, a 48px target and a 1px rule beneath. The chosen one is told
+// by a filled circle, a darker rule and heavier words, never by colour alone. The arrow keys
+// move between the choices of a group because they are real radios with one `name`.
+//
+// `note` is a line that goes with the choice and shows only while it is chosen (the payment
+// methods). It is tied to the radio with aria-describedby, so a screen reader hears it.
+// Used by the checkout; /contact and the product page keep their own, earlier, radios.
+interface Props {
+  id: string;
+  name: string;
+  value: string;
+  label: string;
+  note?: string;
+  checked?: boolean;
+  class?: string;
+  [attr: `data-${string}`]: string | boolean | undefined;
+}
+
+const { id, name, value, label, note, checked = false, class: className, ...rest } = Astro.props;
+---
+
+<div class:list={['option', className]}>
+  <label class="opt" for={id}>
+    <input
+      class="radio"
+      type="radio"
+      {id}
+      {name}
+      {value}
+      {checked}
+      aria-describedby={note ? `${id}-note` : undefined}
+      {...rest}
+    />
+    <span>{label}</span>
+  </label>
+  {note && (
+    <p class="note" id={`${id}-note`}>
+      {note}
+    </p>
+  )}
+</div>
+
+<style>
+  .option {
+    border-bottom: var(--line) solid var(--rule);
+  }
+
+  .opt {
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-12);
+    min-block-size: var(--target);
+    cursor: pointer;
+    font-size: var(--fs-ui);
+  }
+
+  .radio {
+    display: grid;
+    place-items: center;
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+    margin: 0;
+    border: var(--line) solid var(--border);
+    border-radius: 50%;
+    background: transparent;
+    appearance: none;
+    cursor: pointer;
+  }
+
+  .radio::after {
+    content: '';
+    inline-size: 0.625rem;
+    block-size: 0.625rem;
+    border-radius: 50%;
+    background: var(--text);
+    transform: scale(0);
+  }
+
+  .radio:checked {
+    border-color: var(--text);
+  }
+
+  .radio:checked::after {
+    transform: scale(1);
+  }
+
+  .option:has(.radio:checked) {
+    border-bottom-color: var(--text);
+  }
+
+  .option:has(.radio:checked) .opt {
+    font-weight: var(--fw-medium);
+  }
+
+  /* The ring is on the whole line, which is the target. */
+  .radio:focus-visible {
+    outline: none;
+  }
+
+  .opt:has(.radio:focus-visible) {
+    outline: var(--focus-width) solid var(--text);
+    outline-offset: -2px;
+  }
+
+  .note {
+    display: none;
+    padding-block: 0 var(--space-12);
+    padding-inline-start: calc(1.25rem + var(--space-12));
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--text-2);
+  }
+
+  .option:has(.radio:checked) .note {
+    display: block;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .radio::after {
+      transition: transform var(--dur-fast) var(--ease-out);
+    }
+  }
+</style>

@@ -1,0 +1,166 @@
+---
+// The home page (blueprint 3): an editorial index, not a shop window. Seven sections and the
+// footer: R1 the opening, R2 the name, R3 the lines, R4 from field to box, R5 Cosecha 2020 (the
+// only paper section), R6 the journal and R7 the Tasting Room. Dark, dark, dark, dark, paper, dark,
+// dark. Every fact is read from the catalogue; the photographs are the [PHOTO: …] placeholders.
+//
+// The page is static HTML and works without JavaScript. src/scripts/home.ts adds three small
+// things: the picture beside the lines (R3), the picture that changes with the text (R4) and the
+// fade-in of section headings and large pictures.
+import Base from '../layouts/Base.astro';
+import HomeCosecha from '../components/home/HomeCosecha.astro';
+import HomeHero from '../components/home/HomeHero.astro';
+import HomeJournal from '../components/home/HomeJournal.astro';
+import HomeLines from '../components/home/HomeLines.astro';
+import HomeName from '../components/home/HomeName.astro';
+import HomeProcess from '../components/home/HomeProcess.astro';
+import HomeTastingRoom from '../components/home/HomeTastingRoom.astro';
+import { identity, microcopy } from '../data/site.ts';
+import {
+  getArticles,
+  getLedgerRange,
+  getLine,
+  getLineWrapper,
+  getPhoto,
+  getProduct,
+  getProductsByLine,
+  getTobaccoStages,
+  isBlended,
+  productPath,
+} from '../lib/catalogue.ts';
+import { fill, formatPrice, fromPriceCents } from '../lib/format.ts';
+
+const h = microcopy.home;
+
+// ── R1, R2, R5, R7: one photograph each ─────────────────────────────────────
+const [hero, hands, box, room] = await Promise.all([
+  getPhoto('hero-galera'),
+  getPhoto('name-hands'),
+  getPhoto('cosecha-box'),
+  getPhoto('tasting-room'),
+]);
+
+// ── R3: the five lines with a blend (not the Muestrario) ────────────────────
+const groups = await getProductsByLine();
+const lineRows = await Promise.all(
+  groups
+    .filter((g) => isBlended(g.line))
+    .map(async ({ line, products }) => {
+      if (!isBlended(line)) throw new Error('unreachable');
+      // One cigar of the line: the first with a final catalogue photograph, else the first.
+      const first = products.find((p) => p.images.catalog.kind === 'asset') ?? products[0];
+      if (!first) throw new Error(`Line “${line.id}” has no product`);
+      return {
+        id: line.id,
+        name: line.name,
+        tagline: line.tagline,
+        strength: line.strength,
+        wrapper: await getLineWrapper(line),
+        from: fill(h.lines.from, {
+          price: formatPrice(Math.min(...products.map((p) => fromPriceCents(p)))),
+        }),
+        image: first.images.catalog,
+      };
+    }),
+);
+
+// ── R4: the five stages, each with its first figure ─────────────────────────
+const stageRecords = await getTobaccoStages();
+const stages = await Promise.all(
+  stageRecords.map(async (stage) => {
+    const fact = stage.facts[0];
+    if (!fact) throw new Error(`Stage “${stage.id}” has no fact`);
+    if (stage.summary === null) throw new Error(`Stage “${stage.id}” has no summary`);
+    let value: string;
+    if (fact.kind === 'ledger') {
+      const { min, max } = await getLedgerRange(fact.metric);
+      value = min === max ? `${min} months` : `${min}–${max} months`;
+    } else if (fact.kind === 'fixed') {
+      value = fact.value;
+    } else {
+      // Not confirmed by the owner: [NUMBER], with its unit if the record has one.
+      value = fact.unit ? `${fact.value} ${fact.unit}` : fact.value;
+    }
+    return {
+      id: stage.id,
+      title: stage.title,
+      summary: stage.summary,
+      fact: { label: fact.label, value },
+      image: (await getPhoto(stage.photo)).image,
+    };
+  }),
+);
+
+// ── R5: Cosecha 2020, read from its line and its cigar ──────────────────────
+const cosechaLine = await getLine('cosecha-2020');
+const cosecha = await getProduct('cosecha-2020-toro');
+if (!isBlended(cosechaLine) || cosecha.kind !== 'cigar') throw new Error('Cosecha 2020 is a cigar');
+const single = cosecha.options.find((o) => o.type === 'single');
+const boxOption = cosecha.options.find((o) => o.type === 'box');
+if (!single || !boxOption) throw new Error('Cosecha 2020 needs a single and a box');
+const months = (n: number) => `${n} months`;
+const cosechaRows = [
+  { label: 'Harvest', value: String(cosechaLine.harvestYear) },
+  { label: 'Fermentation', value: months(cosechaLine.fermentationMonths) },
+  { label: 'Leaf ageing', value: months(cosechaLine.leafAgeingMonths) },
+  { label: 'Cigar ageing', value: months(cosechaLine.cigarAgeingMonths) },
+  {
+    label: h.cosecha.format,
+    value: `${cosecha.vitola}, ${cosecha.lengthInLabel} × ${cosecha.ring}`,
+  },
+];
+const cosechaPrice = fill(h.cosecha.price, {
+  single: formatPrice(single.priceCents),
+  box: formatPrice(boxOption.priceCents),
+});
+
+// ── R6: the three entries the journal puts first ────────────────────────────
+const articles = (await getArticles()).slice(0, 3);
+
+const organisation = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Casa Velado',
+  description: identity.oneSentence,
+  foundingDate: String(identity.established),
+}).replaceAll('<', '\\u003c');
+---
+
+<Base
+  headerOverlay
+  description="A small family house in Estelí that prints the harvest year on every box. A portfolio project."
+>
+  <script slot="head" type="application/ld+json" set:html={organisation} />
+  <HomeHero photo={hero} />
+  <HomeName photo={hands} />
+  <HomeLines rows={lineRows} initial="galera" />
+  <HomeProcess {stages} />
+  <HomeCosecha
+    image={box.image}
+    rows={cosechaRows}
+    price={cosechaPrice}
+    href={productPath(cosecha)}
+  />
+  <HomeJournal {articles} />
+  <HomeTastingRoom photo={room} />
+</Base>
+
+<script>
+  import '../scripts/home.ts';
+</script>
+
+<style is:global>
+  /* Headings and large pictures fade in once, 16px up, as they come into view (blueprint 8). The
+     rule only applies once the script is running and motion is allowed, so without either the
+     page is simply there. */
+  html.reveal-ready [data-reveal]:not(.is-in) {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+
+  html.reveal-ready [data-reveal] {
+    transition:
+      opacity var(--dur-slow) var(--ease-out),
+      transform var(--dur-slow) var(--ease-out);
+  }
+</style>

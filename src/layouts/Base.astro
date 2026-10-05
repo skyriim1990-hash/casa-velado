@@ -1,0 +1,122 @@
+---
+import '../styles/fonts.css';
+import '../styles/tokens.css';
+import '../styles/reset.css';
+import '../styles/base.css';
+import '../styles/shell.css';
+import SkipLink from '../components/shell/SkipLink.astro';
+import Header from '../components/shell/Header.astro';
+import MobileMenu from '../components/shell/MobileMenu.astro';
+import CartDrawer from '../components/shell/CartDrawer.astro';
+import Footer from '../components/shell/Footer.astro';
+import AgeGate from '../components/shell/AgeGate.astro';
+import CookieBanner from '../components/shell/CookieBanner.astro';
+import serifRoman from '../assets/fonts/casa-serif-roman.woff2?url';
+import sansRegular from '../assets/fonts/casa-sans-400.woff2?url';
+import { OG_LOCALE, SITE_NAME, absoluteUrl, assertDescription, pageTitle } from '../lib/site';
+
+interface Props {
+  /** Page title without the brand suffix. Omit on the home page. */
+  title?: string;
+  /** English, at most 155 characters. */
+  description: string;
+  /** Path of a built WebP Open Graph image (1200×630), e.g. from getImage(). */
+  ogImage?: string;
+  /** Keeps the page out of search engines (e.g. /styleguide). */
+  noindex?: boolean;
+  /** The header floats over a hero and is transparent until the page moves (the home page). */
+  headerOverlay?: boolean;
+}
+
+const { title, description, ogImage, noindex = false, headerOverlay = false } = Astro.props;
+
+const fullTitle = pageTitle(title);
+assertDescription(description);
+
+// Canonical and og:url exist only once PUBLIC_SITE_URL is configured.
+const canonical = absoluteUrl(Astro.url.pathname, Astro.site);
+const ogImageUrl = ogImage ? absoluteUrl(ogImage, Astro.site) : undefined;
+---
+
+<!doctype html>
+<html lang="en" data-header="top">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#14110f" />
+    <!-- Two preloads only: Garamond regular and Plex regular (blueprint 9.2). -->
+    <link rel="preload" href={serifRoman} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={sansRegular} as="font" type="font/woff2" crossorigin />
+    <!-- The SVG is the main icon; the ICO and the touch icon are the only non-WebP rasters. -->
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex" />}
+    {canonical && <link rel="canonical" href={canonical} />}
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:locale" content={OG_LOCALE} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    {canonical && <meta property="og:url" content={canonical} />}
+    {ogImageUrl && (
+      <>
+        <meta property="og:image" content={ogImageUrl} />
+        <meta property="og:image:type" content="image/webp" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta name="twitter:card" content="summary_large_image" />
+      </>
+    )}
+    <!-- Read before the first paint, so the CSS knows at once what to show and nothing flashes:
+         "js" (the shell's buttons need it), "age-pending" (the age answer is not stored or has
+         expired) and "cookies-pending" (no cookie choice is stored). Storage may be blocked. -->
+    <script is:inline>
+      (function () {
+        var root = document.documentElement;
+        root.classList.add('js');
+        try {
+          if (!(Number(localStorage.getItem('cv-age-ok')) > Date.now()))
+            root.classList.add('age-pending');
+          if (!localStorage.getItem('cv-cookies')) root.classList.add('cookies-pending');
+        } catch (e) {
+          root.classList.add('age-pending', 'cookies-pending');
+        }
+      })();
+    </script>
+    <slot name="head" />
+  </head>
+  <body data-header-mode={headerOverlay ? 'overlay' : 'solid'}>
+    <SkipLink />
+    <CookieBanner />
+    <Header overlay={headerOverlay} />
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <Footer />
+    <MobileMenu />
+    <CartDrawer />
+    <AgeGate />
+    <!-- Polite announcements: cart changes, filter counts (blueprint 9.2). -->
+    <div class="live" role="status" aria-live="polite" data-status></div>
+    <script>
+      import '../scripts/shell.ts';
+    </script>
+  </body>
+</html>
+
+<style>
+  /* The live region: spoken, never seen. */
+  .live {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+</style>

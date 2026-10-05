@@ -1,0 +1,185 @@
+/* Design tokens (blueprint 5, 8). Components use these and nothing else: no raw colours,
+   no raw durations. Breakpoints cannot be custom properties; they are written as
+   640px / 1024px / 1280px / 1600px in media queries (blueprint 7.1). */
+
+/* ── Colour ─────────────────────────────────────────────────────────────
+   Dark is the base. A surface scope remaps the same names, so a component that uses
+   --text on --bg is correct on both dark and paper without knowing which. */
+:root,
+[data-surface='dark'] {
+  --bg: #14110f;
+  --surface: #1c1815;
+  --surface-2: #2a231e;
+  --text: #ede6d8;
+  --text-2: #b8ae9c;
+  --text-3: #8a8174; /* not on --surface-2 (4.0 : 1) */
+  --rule: #3a332c; /* book-line rules; carry no information */
+  --border: #6e655a; /* fields and buttons, 3.3 : 1 on --bg (WCAG 1.4.11) */
+  --text-hover: #d8cfbe; /* primary button hover */
+  --gold: #b08d57; /* a trace, never a fill; at most one per screen */
+  --error: #d27a5e;
+  --success: #9aa67a;
+}
+
+/* Paper: reading sections, ledger, articles, Cosecha. */
+:root {
+  --paper: #e9e2d3;
+  --ink: #1e1a16;
+  --ink-2: #5e554b;
+  --paper-rule: #cfc5b2;
+  --gold-ink: #7a5c2e;
+}
+
+[data-surface='paper'] {
+  --bg: var(--paper);
+  --surface: var(--paper); /* fields on paper are told apart by their border */
+  --text: var(--ink);
+  --text-2: var(--ink-2);
+  --text-3: var(--ink-2);
+  --rule: var(--paper-rule);
+  --border: var(--ink-2);
+  --text-hover: var(--ink-2);
+  --gold: var(--gold-ink);
+}
+
+body,
+[data-surface] {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ── Type ───────────────────────────────────────────────────────────── */
+:root {
+  --font-serif: 'Casa Serif', 'Casa Serif Fallback', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Casa Sans', 'Casa Sans Fallback', system-ui, sans-serif;
+
+  --fw-regular: 400;
+  --fw-medium: 500;
+
+  /* Fluid between 360px (22.5rem) and 1600px (100rem), then fixed (blueprint 5.2).
+     size = clamp(min, min + (max − min) × (100vw − 22.5rem) / 77.5, max), all in rem. */
+  --fs-display: clamp(2.75rem, 2.75rem + 3.25 * (100vw - 22.5rem) / 77.5, 6rem); /* 44 → 96 */
+  --fs-h1: clamp(2.25rem, 2.25rem + 1.75 * (100vw - 22.5rem) / 77.5, 4rem); /* 36 → 64 */
+  --fs-h2: clamp(1.875rem, 1.875rem + 1.125 * (100vw - 22.5rem) / 77.5, 3rem); /* 30 → 48 */
+  --fs-h3: clamp(1.375rem, 1.375rem + 0.5 * (100vw - 22.5rem) / 77.5, 1.875rem); /* 22 → 30 */
+  --fs-h4: clamp(1.1875rem, 1.1875rem + 0.1875 * (100vw - 22.5rem) / 77.5, 1.375rem); /* 19 → 22 */
+  --fs-lead: clamp(1.25rem, 1.25rem + 0.25 * (100vw - 22.5rem) / 77.5, 1.5rem); /* 20 → 24 */
+  --fs-article: clamp(
+    1.1875rem,
+    1.1875rem + 0.125 * (100vw - 22.5rem) / 77.5,
+    1.3125rem
+  ); /* 19 → 21 */
+  --fs-ui: clamp(1rem, 1rem + 0.0625 * (100vw - 22.5rem) / 77.5, 1.0625rem); /* 16 → 17 */
+  --fs-card: clamp(
+    1.375rem,
+    1.375rem + 0.125 * (100vw - 22.5rem) / 77.5,
+    1.5rem
+  ); /* card title, 22 → 24 (blueprint 4.5) */
+  --fs-small: 0.875rem; /* 14 */
+  --fs-label: 0.75rem; /* 12 */
+  --fs-button: 0.9375rem; /* 15 */
+  --fs-menu: 2.25rem; /* mobile menu links, 36 (blueprint 5.4) */
+
+  --lh-display: 1.02;
+  --lh-h1: 1.08;
+  --lh-h2: 1.12;
+  --lh-h3: 1.2;
+  --lh-h4: 1.3;
+  --lh-lead: 1.45;
+  --lh-article: 1.6;
+  --lh-ui: 1.55;
+  --lh-small: 1.45;
+  --lh-label: 1.3;
+  --lh-button: 1;
+
+  --ls-label: 0.1em;
+  --measure: 68ch; /* 60–72 characters */
+}
+
+/* ── Space (4px base, in rem so zoom scales it) ─────────────────────── */
+:root {
+  --space-4: 0.25rem;
+  --space-8: 0.5rem;
+  --space-12: 0.75rem;
+  --space-16: 1rem;
+  --space-24: 1.5rem;
+  --space-32: 2rem;
+  --space-48: 3rem;
+  --space-64: 4rem;
+  --space-96: 6rem;
+  --space-128: 8rem;
+  --space-160: 10rem;
+
+  /* 72px on a phone, 160px from 1600px wide */
+  --space-section: clamp(4.5rem, 10vw, 10rem);
+}
+
+/* ── Layout (blueprint 5.3) ─────────────────────────────────────────── */
+:root {
+  --cols: 4;
+  --gutter: 1rem;
+  --margin: 1.25rem;
+
+  --w-text: 680px;
+  --w-content: 1200px;
+  --w-wide: 1440px;
+
+  --header-h: 72px;
+  --header-h-compact: 64px;
+  --toolbar-h: 56px;
+  --target: 3rem; /* 48px: smallest touch target in the shell (blueprint 7.3) */
+}
+
+@media (min-width: 640px) {
+  :root {
+    --cols: 8;
+    --gutter: 1.5rem;
+    --margin: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --cols: 12;
+    --margin: 3rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --gutter: 2rem;
+    --margin: 4rem;
+  }
+}
+
+/* ── Shape, line, focus ─────────────────────────────────────────────── */
+:root {
+  --radius-check: 2px; /* the only rounded corner on the site */
+  --line: 1px;
+  --focus-width: 2px;
+  --focus-offset: 3px;
+}
+
+/* ── Motion (blueprint 8) ───────────────────────────────────────────── */
+:root {
+  --dur-fast: 150ms;
+  --dur-base: 250ms;
+  --dur-slow: 450ms;
+  /* The remaining durations in the blueprint's motion table, named once. */
+  --dur-image: 200ms; /* image fade-in, card hover, gallery, R3 preview, page transition */
+  --dur-story: 400ms; /* R4 sticky narrative */
+  --dur-zoom: 800ms; /* article card image, the only image scale */
+  --dur-reduced: 100ms; /* every overlay under prefers-reduced-motion */
+
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Stacking ───────────────────────────────────────────────────────── */
+:root {
+  --z-toolbar: 10;
+  --z-header: 20;
+  --z-scrim: 40;
+  --z-drawer: 50;
+  --z-gate: 100;
+}

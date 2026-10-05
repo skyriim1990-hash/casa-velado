@@ -1,0 +1,278 @@
+---
+// The footer (blueprint 5.4, 7.3). Four columns from 1024px: the mark and the signature,
+// Collection, The house, and the letter. Two by two from 640px. On a phone the letter is
+// second, right after the mark, and the two lists of pages sit side by side. The last lines
+// are the health warning and, quietly, the fictional-brand notice (blueprint 2.3).
+// Nothing here is invented: no address, phone, email, hours or legal entity.
+import BrandMark from '../BrandMark.astro';
+import Button from '../Button.astro';
+import Container from '../Container.astro';
+import Field from '../Field.astro';
+import { identity, microcopy, nav } from '../../data/site.ts';
+import { getLines } from '../../lib/catalogue.ts';
+
+// Collection: the four permanent lines and the Muestrario (blueprint 5.4). Cosecha 2020 is the
+// year's edition, not a permanent line, so it is not listed here. Each line links to its block
+// on /cigars; the Muestrario, which is a product, links to its own page.
+const lines = await getLines();
+const collection = lines
+  .filter((line) => line.kind === 'permanent' || line.kind === 'sampler')
+  .map((line) => ({
+    label: line.name,
+    href: line.kind === 'sampler' ? `/cigars/${line.id}` : `/cigars#${line.id}`,
+  }));
+---
+
+<footer class="site-footer" id="site-footer">
+  <Container class="inner">
+    <div class="grid" id="footer-pages">
+      <div class="mark">
+        <BrandMark
+          mark="wordmark-stacked"
+          label="Casa Velado, established 1987, Estelí"
+          class="mark-svg"
+        />
+        <p class="signature">
+          <i>{identity.signature}</i>
+        </p>
+      </div>
+
+      <nav class="col collection" aria-labelledby="footer-collection">
+        <h2 class="heading" id="footer-collection">
+          Collection
+        </h2>
+        <ul>
+          {collection.map((item) => (
+            <li>
+              <a href={item.href}>{item.label}</a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <nav class="col house" aria-labelledby="footer-house">
+        <h2 class="heading" id="footer-house">
+          The house
+        </h2>
+        <ul>
+          {nav.footerHouse.map((item) => (
+            <li>
+              <a href={item.href}>{item.label}</a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <section class="col letters" aria-labelledby="footer-letters">
+        <h2 class="heading" id="footer-letters">
+          {microcopy.newsletter.title}
+        </h2>
+        <p class="letters-text">{microcopy.newsletter.text}</p>
+        <!-- No email is sent. Without JavaScript the button stays disabled. -->
+        <form
+          class="letters-form"
+          data-newsletter
+          novalidate
+          data-err-empty={microcopy.forms.errors.email}
+          data-err-incomplete={microcopy.forms.errors.emailIncomplete}
+          data-sending={microcopy.forms.sending}
+          data-confirmation={identity.demo.newsletter}
+        >
+          <Field
+            id="newsletter-email"
+            name="email"
+            type="email"
+            label={microcopy.forms.fields.email}
+            autocomplete="email"
+            required
+          />
+          <Button type="submit" disabled>
+            {microcopy.newsletter.submit}
+          </Button>
+        </form>
+        <p class="status" role="status" data-newsletter-status></p>
+      </section>
+    </div>
+
+    <div class="base">
+      <p class="copy">© Casa Velado</p>
+      <ul class="legal">
+        {nav.legal.map((item) => (
+          <li>
+            <a href={item.href}>{item.label}</a>
+          </li>
+        ))}
+      </ul>
+      <p class="adults">{microcopy.footer.adults}</p>
+    </div>
+
+    <p class="small">{microcopy.footer.health}</p>
+    <p class="small">{identity.fictionNotice}</p>
+  </Container>
+</footer>
+
+<style>
+  .site-footer {
+    flex: none;
+    padding-block: var(--space-96);
+    border-top: var(--line) solid var(--rule);
+    background: var(--bg);
+  }
+
+  .site-footer :global(.inner) {
+    display: grid;
+    gap: var(--space-32);
+  }
+
+  /* On a phone: the mark, the letter, then the two lists side by side. */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-48) var(--gutter);
+    align-items: start;
+  }
+
+  .mark {
+    grid-column: 1 / -1;
+    order: 1;
+  }
+
+  .letters {
+    grid-column: 1 / -1;
+    order: 2;
+  }
+
+  .collection {
+    order: 3;
+  }
+
+  .house {
+    order: 4;
+  }
+
+  .mark {
+    display: grid;
+    gap: var(--space-16);
+    justify-items: start;
+  }
+
+  .mark :global(.mark-svg) {
+    inline-size: min(100%, 15rem);
+  }
+
+  .signature {
+    font-family: var(--font-serif);
+    font-size: var(--fs-lead);
+    line-height: var(--lh-lead);
+    color: var(--text-2);
+  }
+
+  .heading {
+    margin-block-end: var(--space-16);
+    font-family: var(--font-sans);
+    font-size: var(--fs-label);
+    font-weight: var(--fw-medium);
+    line-height: var(--lh-label);
+    letter-spacing: var(--ls-label);
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  ul {
+    list-style: none;
+  }
+
+  .col li a,
+  .legal a {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: 2.75rem;
+    text-decoration: none;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .col li a:hover,
+    .legal a:hover {
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 4px;
+    }
+  }
+
+  .letters-text {
+    max-inline-size: 24rem;
+    margin-block-end: var(--space-24);
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--text-2);
+  }
+
+  .letters-form {
+    display: grid;
+    gap: var(--space-16);
+    max-inline-size: 24rem;
+  }
+
+  .status {
+    max-inline-size: 24rem;
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--success);
+  }
+
+  .status:empty {
+    display: none;
+  }
+
+  .base {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4) var(--space-24);
+    padding-block-start: var(--space-24);
+    border-top: var(--line) solid var(--rule);
+    font-size: var(--fs-small);
+    color: var(--text-2);
+  }
+
+  .legal {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-24);
+  }
+
+  @media (min-width: 40rem) {
+    .adults {
+      margin-inline-start: auto;
+    }
+  }
+
+  .small {
+    font-size: var(--fs-label);
+    line-height: var(--lh-small);
+    color: var(--text-3);
+  }
+
+  /* Two by two from 640px, in the blueprint's order. */
+  @media (min-width: 40rem) {
+    .grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      row-gap: var(--space-64);
+    }
+
+    .mark,
+    .letters,
+    .collection,
+    .house {
+      grid-column: auto;
+      order: 0;
+    }
+  }
+
+  /* Four columns from 1024px. */
+  @media (min-width: 64rem) {
+    .grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+</style>

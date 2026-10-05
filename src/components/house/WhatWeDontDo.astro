@@ -1,0 +1,87 @@
+---
+// What we don’t do (blueprint 2.3, final text): exactly five statements, set as ruled lines of the
+// book with a number on the left. Factual, not defensive: no icon, no colour, no strike-through,
+// no card.
+import Container from '../Container.astro';
+import { microcopy } from '../../data/site.ts';
+
+interface Props {
+  items: readonly string[];
+}
+
+const { items } = Astro.props;
+---
+
+<section class="dont" aria-labelledby="dont-title">
+  <Container grid>
+    <h2 id="dont-title">{microcopy.ourHouse.wontDo.title}</h2>
+    <ol class="list">
+      {items.map((item) => (
+        <li>
+          <p>{item}</p>
+        </li>
+      ))}
+    </ol>
+  </Container>
+</section>
+
+<style>
+  .dont {
+    padding-block: var(--space-section);
+  }
+
+  h2,
+  .list {
+    grid-column: 1 / -1;
+    min-inline-size: 0;
+  }
+
+  h2 {
+    font-size: var(--fs-h2);
+    line-height: var(--lh-h2);
+    margin-block-end: var(--space-32);
+  }
+
+  .list {
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    padding-block: var(--space-16);
+    border-top: var(--line) solid var(--rule);
+  }
+
+  li:last-child {
+    border-bottom: var(--line) solid var(--rule);
+  }
+
+  p {
+    font-family: var(--font-serif);
+    font-size: var(--fs-h4);
+    line-height: var(--lh-h4);
+  }
+
+  @media (min-width: 40rem) {
+    li {
+      padding-block: var(--space-24);
+    }
+  }
+
+  @media (min-width: 64rem) {
+    h2 {
+      grid-column: 1 / span 4;
+    }
+
+    .list {
+      grid-column: 6 / -1;
+    }
+
+    p {
+      font-size: var(--fs-h3);
+      line-height: var(--lh-h3);
+    }
+  }
+</style>

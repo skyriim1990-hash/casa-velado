@@ -1,0 +1,64 @@
+---
+// A text link, the one treatment for every link in running text and for the standalone
+// “How we work →”: a 1px underline, 4px below, at 40% of the text colour, 100% on hover
+// (fine pointers only). The base `a` rule in base.css draws it; this component adds the arrow
+// and the gold hover.
+//
+// The arrow is the character “→” from the font, not an icon, and it is hidden from screen
+// readers: it says nothing the link text does not.
+//
+// `gold`: on hover the underline turns gold. Gold is a trace and at most one element per
+// screen, so only use it where nothing else on the screen is gold (blueprint 5.4).
+//
+// `standalone`: a link on its own line (default when it has an arrow), not inside a sentence. Its
+// box is at least 48px high so it can be tapped; a link inside a sentence stays inline.
+//
+// `data-demo-state="hover"` forces the state for the specimens on /styleguide only.
+interface Props {
+  href: string;
+  /** Add “→” after the text. */
+  arrow?: boolean;
+  gold?: boolean;
+  /** A link on its own line: a 48px tap target. Defaults to true with an arrow. */
+  standalone?: boolean;
+  class?: string;
+  [attr: `data-${string}`]: string | boolean | undefined;
+  [attr: `aria-${string}`]: string | boolean | undefined;
+}
+
+const {
+  href,
+  arrow = false,
+  gold = false,
+  standalone = arrow,
+  class: className,
+  ...rest
+} = Astro.props;
+
+// The text without the line breaks the markup around it adds, so the underline ends at the last letter.
+const label = (await Astro.slots.render('default')).trim();
+---
+
+<!-- prettier-ignore -->
+<a class:list={['link', { 'link--gold': gold, 'link--standalone': standalone }, className]} {href} {...rest}><Fragment set:html={label} />{arrow && <span class="arrow" aria-hidden="true">→</span>}</a>
+
+<style>
+  /* Padding, not margin: the tap area is 48px, the underline stays under the text. */
+  .link--standalone {
+    display: inline-block;
+    padding-block: calc((var(--target) - 1lh) / 2);
+  }
+
+  /* inline-block, so the underline does not run under the arrow */
+  .arrow {
+    display: inline-block;
+    margin-inline-start: 0.35em;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .link--gold:hover,
+    .link--gold[data-demo-state='hover'] {
+      text-decoration-color: var(--gold);
+    }
+  }
+</style>

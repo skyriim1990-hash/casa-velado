@@ -1,0 +1,178 @@
+---
+// The one template of the four legal pages (blueprint 2.1: Terms, Privacy, Cookies, Shipping).
+// A title, one sentence, the date of the last update (a placeholder until the owner gives it)
+// and numbered sections: the heading on the left and the text on the right from 1024px, one
+// column below. A section that lists real items (the things the browser keeps, the delivery
+// facts) sets them as book lines. At the end, links to the other three pages.
+// The text is in src/data/legal.ts; nothing here is written twice.
+import BookLine from '../BookLine.astro';
+import Container from '../Container.astro';
+import Label from '../Label.astro';
+import { legalMeta, type LegalPage } from '../../data/legal.ts';
+import { nav } from '../../data/site.ts';
+
+interface Props {
+  page: LegalPage;
+}
+
+const { page } = Astro.props;
+
+// The other three, in the order of the footer.
+const others = nav.legal.filter((item) => item.href !== `/${page.id}`);
+---
+
+<article class="legal">
+  <Container grid>
+    <header class="head">
+      <h1>{page.title}</h1>
+      <p class="intro">{page.intro}</p>
+      <p class="updated">
+        <Label as="span">{legalMeta.updated}</Label>
+        <span>{legalMeta.updatedValue}</span>
+      </p>
+    </header>
+
+    <div class="sections">
+      {page.sections.map((section) => (
+        <section class="section" aria-labelledby={`${page.id}-${section.id}`}>
+          <div class="heading">
+            <h2 id={`${page.id}-${section.id}`}>{section.heading}</h2>
+          </div>
+          <div class="text">
+            {section.paragraphs?.map((paragraph) => (
+              <p>{paragraph}</p>
+            ))}
+            {section.rows && <BookLine rows={section.rows} />}
+          </div>
+        </section>
+      ))}
+    </div>
+
+    <nav class="others" aria-label={legalMeta.related}>
+      <Label>{legalMeta.related}</Label>
+      <ul>
+        {others.map((item) => (
+          <li>
+            <a href={item.href}>{item.label}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  </Container>
+</article>
+
+<style>
+  .legal {
+    padding-block: var(--space-48) var(--space-section);
+  }
+
+  .head,
+  .sections,
+  .others {
+    grid-column: 1 / -1;
+    min-inline-size: 0;
+  }
+
+  .head {
+    display: grid;
+    gap: var(--space-16);
+    justify-items: start;
+    margin-block-end: var(--space-48);
+  }
+
+  .intro {
+    max-inline-size: 34ch;
+    font-family: var(--font-serif);
+    font-size: var(--fs-lead);
+    line-height: var(--lh-lead);
+    color: var(--text-2);
+  }
+
+  .updated {
+    display: flex;
+    gap: var(--space-12);
+    align-items: baseline;
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--text-2);
+  }
+
+  .sections {
+    display: grid;
+    gap: var(--space-48);
+  }
+
+  .section {
+    display: grid;
+    gap: var(--space-16);
+    align-content: start;
+  }
+
+  .heading {
+    display: grid;
+    gap: var(--space-8);
+    align-content: start;
+  }
+
+  .heading h2 {
+    font-size: var(--fs-h3);
+    line-height: var(--lh-h3);
+  }
+
+  .text {
+    display: grid;
+    gap: var(--space-16);
+    max-inline-size: var(--w-text);
+    font-size: var(--fs-ui);
+    line-height: var(--lh-ui);
+  }
+
+  .text p {
+    max-inline-size: 68ch;
+    text-wrap: pretty;
+  }
+
+  .others {
+    display: grid;
+    gap: var(--space-8);
+    margin-block-start: var(--space-64);
+  }
+
+  .others ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-24);
+    padding: 0;
+    list-style: none;
+  }
+
+  .others a {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--target);
+  }
+
+  @media (min-width: 64rem) {
+    .legal {
+      padding-block: var(--space-96) var(--space-section);
+    }
+
+    .head {
+      grid-column: 1 / span 8;
+      margin-block-end: var(--space-64);
+    }
+
+    .section {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      column-gap: var(--gutter);
+    }
+
+    .heading {
+      grid-column: 1 / span 4;
+    }
+
+    .text {
+      grid-column: 5 / span 7;
+    }
+  }
+</style>

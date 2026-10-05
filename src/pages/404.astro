@@ -1,0 +1,60 @@
+---
+// The 404 page (blueprint 2.1, 2.3, App. B): short and useful, with the two ways out. Its H1
+// is centred, one of the two places the blueprint allows it. It is kept out of search and
+// out of the sitemap.
+import Base from '../layouts/Base.astro';
+import Button from '../components/Button.astro';
+import Container from '../components/Container.astro';
+import { microcopy } from '../data/site.ts';
+
+const c = microcopy.notFound;
+---
+
+<Base
+  title="Page not found"
+  description="This page doesn’t exist. Go back to the home page or browse the cigars."
+  noindex
+>
+  <Container width="text">
+    <div class="not-found">
+      <h1>{c.text}</h1>
+      <div class="actions">
+        <Button href="/">{c.home}</Button>
+        <Button href="/cigars" variant="secondary">
+          {c.browse}
+        </Button>
+      </div>
+    </div>
+  </Container>
+</Base>
+
+<style>
+  .not-found {
+    display: grid;
+    gap: var(--space-48);
+    justify-items: center;
+    padding-block: var(--space-section);
+    text-align: center;
+  }
+
+  .actions {
+    display: grid;
+    gap: var(--space-16);
+    inline-size: 100%;
+  }
+
+  .actions :global(.btn) {
+    inline-size: 100%;
+  }
+
+  @media (min-width: 40rem) {
+    .actions {
+      grid-template-columns: repeat(2, auto);
+      justify-content: center;
+    }
+
+    .actions :global(.btn) {
+      inline-size: auto;
+    }
+  }
+</style>

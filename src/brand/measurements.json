@@ -1,0 +1,300 @@
+{
+  "fonts": {
+    "serifCapRatio": 0.65,
+    "sansCapRatio": 0.698
+  },
+  "wordmark": {
+    "viewBox": [823, 133],
+    "nameSize": 100,
+    "nameTracking": 0.16,
+    "wordSpace": 0.72,
+    "subSize": 25,
+    "subTracking": 0.18,
+    "pad": 4,
+    "nameBase": 69,
+    "nameCap": 65,
+    "nameInkWidth": 814.6,
+    "subBase": 122.2,
+    "subCap": 17.5,
+    "subInkWidth": 290.1,
+    "gapNameToSub": 35.8,
+    "glyphs": [
+      {
+        "ch": "C",
+        "left": 4,
+        "right": 64.9
+      },
+      {
+        "ch": "A",
+        "left": 85.6,
+        "right": 155.5
+      },
+      {
+        "ch": "S",
+        "left": 174.6,
+        "right": 212.8
+      },
+      {
+        "ch": "A",
+        "left": 232.5,
+        "right": 302.4
+      },
+      {
+        "ch": "V",
+        "left": 343.8,
+        "right": 411.6
+      },
+      {
+        "ch": "E",
+        "left": 428.5,
+        "right": 478.7
+      },
+      {
+        "ch": "L",
+        "left": 500.3,
+        "right": 555.1
+      },
+      {
+        "ch": "A",
+        "left": 570.4,
+        "right": 640.3
+      },
+      {
+        "ch": "D",
+        "left": 658.3,
+        "right": 727.3
+      },
+      {
+        "ch": "O",
+        "left": 751.3,
+        "right": 818.6
+      }
+    ],
+    "pairs": [
+      {
+        "pair": "CA",
+        "natural": 5.3,
+        "kern": 0,
+        "tracking": 16,
+        "manual": -0.6,
+        "final": 20.7,
+        "check": true
+      },
+      {
+        "pair": "AS",
+        "natural": 3.5,
+        "kern": 0,
+        "tracking": 16,
+        "manual": -0.4,
+        "final": 19.1,
+        "check": true
+      },
+      {
+        "pair": "SA",
+        "natural": 4.1,
+        "kern": 0,
+        "tracking": 16,
+        "manual": -0.4,
+        "final": 19.7,
+        "check": true
+      },
+      {
+        "pair": "VE",
+        "natural": 3.1,
+        "kern": 0,
+        "tracking": 16,
+        "manual": -2.2,
+        "final": 16.9,
+        "check": true
+      },
+      {
+        "pair": "EL",
+        "natural": 5.2,
+        "kern": 0,
+        "tracking": 16,
+        "manual": 0.4,
+        "final": 21.6,
+        "check": true
+      },
+      {
+        "pair": "LA",
+        "natural": 0.7,
+        "kern": 0,
+        "tracking": 16,
+        "manual": -1.4,
+        "final": 15.3,
+        "check": true
+      },
+      {
+        "pair": "AD",
+        "natural": 2.4,
+        "kern": 0,
+        "tracking": 16,
+        "manual": -0.4,
+        "final": 18,
+        "check": true
+      },
+      {
+        "pair": "DO",
+        "natural": 8,
+        "kern": 0,
+        "tracking": 16,
+        "manual": 0,
+        "final": 24,
+        "check": true
+      }
+    ],
+    "wordGap": 41.4,
+    "manualPairs": {
+      "CA": -6,
+      "AS": -4,
+      "SA": -4,
+      "AV": -30,
+      "VE": -22,
+      "EL": 4,
+      "LA": -14,
+      "AD": -4,
+      "DO": 0
+    }
+  },
+  "stacked": {
+    "viewBox": [483, 234],
+    "casaInk": 298.4,
+    "veladoInk": 474.8,
+    "subInk": 290.1,
+    "casaInset": 88.2,
+    "lineLead": 36,
+    "lineLeadRatio": 0.554,
+    "nameCap": 65,
+    "casaBase": 69,
+    "veladoBase": 170,
+    "subBase": 223.2,
+    "casaCentre": 241.5,
+    "veladoCentre": 241.5,
+    "subCentre": 241.5
+  },
+  "monogram": {
+    "viewBox": [200, 124],
+    "cx": 100,
+    "cy": 62,
+    "outer": {
+      "rx": 96,
+      "ry": 58,
+      "stroke": 2.4
+    },
+    "inner": {
+      "rx": 89,
+      "ry": 51,
+      "stroke": 0.9
+    },
+    "letters": {
+      "cap": 46,
+      "wght": 400,
+      "tracking": 0.04,
+      "left": 51.5,
+      "right": 148.5,
+      "width": 97.1,
+      "top": 39.5,
+      "base": 85.5
+    }
+  },
+  "bands": {
+    "viewBox": [640, 200],
+    "band-1987": {
+      "frames": [[12, 2.2]],
+      "ovals": [[150, 66, 2.2]],
+      "letters": {
+        "cap": 62,
+        "wght": 500,
+        "tracking": 0.12,
+        "left": 249.9,
+        "right": 390.1,
+        "width": 140.2,
+        "top": 69.5,
+        "base": 131.5
+      }
+    },
+    "band-mid": {
+      "frames": [[12, 1.8]],
+      "ovals": [
+        [152, 68, 2],
+        [143, 59, 0.9]
+      ],
+      "letters": {
+        "cap": 62,
+        "wght": 450,
+        "tracking": 0.08,
+        "left": 252.2,
+        "right": 387.8,
+        "width": 135.5,
+        "top": 69.5,
+        "base": 131.5
+      }
+    },
+    "band-current": {
+      "frames": [
+        [12, 1.4],
+        [19, 0.7]
+      ],
+      "ovals": [
+        [154, 70, 1.8],
+        [146, 62, 0.7]
+      ],
+      "letters": {
+        "cap": 62,
+        "wght": 400,
+        "tracking": 0.04,
+        "left": 254.6,
+        "right": 385.4,
+        "width": 130.9,
+        "top": 69.5,
+        "base": 131.5
+      }
+    }
+  },
+  "favicon": {
+    "viewBox": [64, 64],
+    "oval": {
+      "rx": 30,
+      "ry": 22,
+      "stroke": 3
+    },
+    "letters": {
+      "cap": 19.5,
+      "wght": 700,
+      "tracking": 0.02,
+      "left": 11,
+      "right": 53,
+      "width": 42,
+      "top": 22.7,
+      "base": 42.2
+    },
+    "tiny": {
+      "cap": 30,
+      "wght": 700,
+      "tracking": 0,
+      "left": 0.1,
+      "right": 63.9,
+      "width": 63.7,
+      "top": 17.5,
+      "base": 47.5
+    }
+  },
+  "touchIcon": {
+    "viewBox": [180, 180],
+    "ovals": [
+      [66, 46, 3.4],
+      [60, 40, 1.2]
+    ],
+    "letters": {
+      "cap": 40,
+      "wght": 600,
+      "tracking": 0.04,
+      "left": 46.8,
+      "right": 133.2,
+      "width": 86.5,
+      "top": 70.5,
+      "base": 110.5
+    }
+  }
+}

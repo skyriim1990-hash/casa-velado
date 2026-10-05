@@ -1,0 +1,146 @@
+---
+// R1, the opening (blueprint 3, v1.1). Place, tone and one direction. The photograph comes first
+// and the words follow it on the dark ground, never on the picture: a 4:5 photograph on a phone,
+// 4:3 from 640px (no taller than 70svh) and 21:9 from 1024px (no taller than 68svh, so the H1 is
+// in the first screen). Then the label, the H1, the sentence and the actions, left-aligned in
+// columns 1–6 (a full-width button on a phone). The photograph is the Photo component with three
+// separate crops, eager and at high priority; it is never faded in, never scaled, never moved.
+// The only overlay is a faint band at its top edge, for the transparent header's words. No video,
+// no carousel, no scroll cue.
+import Button from '../Button.astro';
+import Container from '../Container.astro';
+import Label from '../Label.astro';
+import Photo from '../Photo.astro';
+import TextLink from '../TextLink.astro';
+import { microcopy } from '../../data/site.ts';
+import type { Photo as PhotoRecord } from '../../lib/schemas.ts';
+
+interface Props {
+  photo: PhotoRecord;
+}
+
+const { photo } = Astro.props;
+const c = microcopy.home.hero;
+---
+
+<section class="hero" aria-labelledby="hero-title">
+  <div class="media">
+    <Photo
+      image={photo.image}
+      kind="hero"
+      sizes="100vw"
+      priority
+      alt={photo.image.kind === 'placeholder' ? photo.image.description : ''}
+    />
+  </div>
+
+  <div class="text">
+    <Container grid>
+      <div class="copy">
+        <Label>{c.label}</Label>
+        <h1 id="hero-title">{c.title}</h1>
+        <p class="subtitle">{c.subtitle}</p>
+        <div class="actions">
+          <Button href="/cigars">{c.cta}</Button>
+          <TextLink href="/tobacco" arrow>
+            {c.link}
+          </TextLink>
+        </div>
+      </div>
+    </Container>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+  }
+
+  /* The header is transparent over this photograph until the page moves, and its words fall on
+     the bright hanging leaves. A plain band of --bg at the top edge (45% down to 48px, gone by
+     160px) is there only so they can be read: the weakest that brings every header word to
+     4.5:1 over the Galera crops at every width (Stage 14.6). It is not on the words of the hero. */
+  .media {
+    position: relative;
+  }
+
+  .media::after {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    block-size: 10rem;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--bg) 45%, transparent) 0,
+      color-mix(in srgb, var(--bg) 45%, transparent) 3rem,
+      transparent 10rem
+    );
+  }
+
+  /* The photograph keeps the ratio of its crop (4:5, 4:3, 21:9). From 640px it has a ceiling, so
+     a short or landscape screen still shows the words; under it the picture is cut evenly. */
+  @media (min-width: 40rem) {
+    .media :global(.photo) {
+      max-block-size: 70svh;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .media :global(.photo) {
+      max-block-size: 68svh;
+    }
+  }
+
+  .copy {
+    grid-column: 1 / -1;
+    display: grid;
+    gap: var(--space-16);
+    justify-items: start;
+    padding-block: var(--space-32) var(--space-48);
+  }
+
+  @media (min-width: 40rem) {
+    .copy {
+      grid-column: 1 / span 6;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .copy {
+      padding-block: var(--space-48);
+    }
+  }
+
+  /* The display size: the one use on the whole site (blueprint 11). */
+  h1 {
+    font-size: var(--fs-display);
+    line-height: var(--lh-display);
+    max-inline-size: 11ch;
+  }
+
+  .subtitle {
+    max-inline-size: 38ch;
+    font-family: var(--font-serif);
+    font-size: var(--fs-lead);
+    line-height: var(--lh-lead);
+    color: var(--text-2);
+  }
+
+  .actions {
+    display: grid;
+    gap: var(--space-8);
+    justify-items: start;
+    inline-size: 100%;
+  }
+
+  @media (min-width: 40rem) {
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-8) var(--space-24);
+      inline-size: auto;
+    }
+  }
+</style>

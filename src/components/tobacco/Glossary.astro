@@ -1,0 +1,99 @@
+---
+// The glossary (blueprint Appendix A): eleven terms from the glossary records, set as an index, not
+// as cards. Every definition is on the page; nothing is folded away. A Spanish term is marked
+// <i lang="es">, “ring gauge” is English. From 640px the term is on the left and its meaning on
+// the right, with a rule between entries; below, the meaning is under the term.
+import Container from '../Container.astro';
+import { microcopy } from '../../data/site.ts';
+import type { GlossaryTerm } from '../../lib/schemas.ts';
+
+interface Props {
+  terms: GlossaryTerm[];
+}
+
+const { terms } = Astro.props;
+---
+
+<section class="glossary" id="glossary" aria-labelledby="glossary-title">
+  <Container grid>
+    <h2 id="glossary-title">{microcopy.tobacco.glossary}</h2>
+
+    <dl class="terms">
+      {terms.map((term) => (
+        <div class="entry" id={`glossary-${term.id}`}>
+          <dt>{term.spanish ? <i lang="es">{term.term}</i> : term.term}</dt>
+          <dd>{term.meaning}</dd>
+        </div>
+      ))}
+    </dl>
+  </Container>
+</section>
+
+<style>
+  .glossary {
+    padding-block: var(--space-section);
+  }
+
+  h2,
+  .terms {
+    grid-column: 1 / -1;
+    min-inline-size: 0;
+  }
+
+  h2 {
+    font-size: var(--fs-h2);
+    line-height: var(--lh-h2);
+    margin-block-end: var(--space-32);
+  }
+
+  .entry {
+    display: grid;
+    gap: var(--space-4);
+    padding-block: var(--space-16);
+    border-top: var(--line) solid var(--rule);
+    scroll-margin-block-start: calc(var(--header-h) + var(--space-16));
+  }
+
+  .entry:last-child {
+    border-bottom: var(--line) solid var(--rule);
+  }
+
+  dt {
+    font-family: var(--font-serif);
+    font-size: var(--fs-h3);
+    line-height: var(--lh-h3);
+  }
+
+  dd {
+    margin: 0;
+    max-inline-size: var(--measure);
+    color: var(--text-2);
+  }
+
+  @media (min-width: 40rem) {
+    .entry {
+      grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+      column-gap: var(--gutter);
+      align-items: baseline;
+      padding-block: var(--space-24);
+    }
+
+    dt {
+      grid-column: 1 / span 3;
+    }
+
+    dd {
+      grid-column: 4 / -1;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    dt {
+      grid-column: 1 / span 4;
+    }
+
+    dd {
+      grid-column: 6 / span 6;
+    }
+  }
+</style>

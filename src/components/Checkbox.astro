@@ -1,0 +1,119 @@
+---
+// A checkbox (blueprint 5.4): 20px, a 1px line, a 2px corner (the one rounded corner on the
+// site), the tick drawn as an inline SVG line of 1.5px. The label is the larger target.
+//
+// `count` is for filters: the number of results, set at the right of the label. Screen readers
+// hear it as part of the name (“Jalapa 3 cigars”); a script changes the number in [data-count].
+// A disabled box is told apart by more than colour: it is dashed and its label is dimmed.
+interface Props {
+  id: string;
+  name: string;
+  /** The label text. */
+  label: string;
+  /** Extra text after the label, e.g. a placeholder price. */
+  note?: string;
+  value?: string;
+  checked?: boolean;
+  disabled?: boolean;
+  /** A result count beside the label (filters). */
+  count?: number;
+  /** The word after the count for screen readers: “cigars”. */
+  countUnit?: string;
+  class?: string;
+  [attr: `data-${string}`]: string | boolean | undefined;
+}
+
+const {
+  id,
+  name,
+  label,
+  note,
+  value,
+  checked = false,
+  disabled = false,
+  count,
+  countUnit = '',
+  class: className,
+  ...rest
+} = Astro.props;
+---
+
+<label class:list={['check', className]} for={id}>
+  <input type="checkbox" {id} {name} {value} {checked} {disabled} {...rest} />
+  <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false">
+    <path d="M5 10.5l3.2 3.2L15 6.8" fill="none" stroke="currentColor" stroke-width="1.5" />
+  </svg>
+  <span class="text">{label}</span>
+  {note && <span class="note">{note}</span>}
+  {count !== undefined && (
+    <span class="note">
+      <span data-count>{count}</span>
+      <span class="unit"> {countUnit}</span>
+    </span>
+  )}
+</label>
+
+<style>
+  .check {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1.25rem 1fr auto;
+    align-items: center;
+    gap: var(--space-12);
+    min-block-size: var(--target);
+    cursor: pointer;
+    font-size: var(--fs-ui);
+  }
+
+  input {
+    grid-area: 1 / 1;
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+    margin: 0;
+    background: var(--surface);
+    border: var(--line) solid var(--border);
+    border-radius: var(--radius-check);
+    appearance: none;
+    cursor: pointer;
+  }
+
+  svg {
+    grid-area: 1 / 1;
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  input:checked + svg {
+    opacity: 1;
+  }
+
+  input:checked {
+    border-color: var(--text);
+  }
+
+  .note {
+    color: var(--text-3);
+    font-size: var(--fs-small);
+  }
+
+  /* The unit is for screen readers only. */
+  .unit {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* Not available: dimmed, a dashed box, and the pointer says so. */
+  .check:has(input:disabled) {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+
+  input:disabled {
+    border-style: dashed;
+    cursor: not-allowed;
+  }
+</style>

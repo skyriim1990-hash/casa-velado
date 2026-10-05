@@ -1,0 +1,293 @@
+---
+// Contact (blueprint 2.3): a short page for three intentions, a general enquiry, trade and press,
+// one form for all of them (name, email, message) and, beside it, the house's email, phone and the
+// factory's address in Estelí. The three values are placeholders until the owner gives them.
+//
+// The form is a demonstration: src/scripts/forms.ts checks it and shows the confirmation;
+// nothing is sent. The intentions are a real radio group (a fieldset with a legend and three
+// native radios; the arrow keys move between them). Without the script the page reads whole and
+// the button waits.
+import Base from '../layouts/Base.astro';
+import BookLine from '../components/BookLine.astro';
+import Button from '../components/Button.astro';
+import Container from '../components/Container.astro';
+import Field from '../components/Field.astro';
+import { contact } from '../data/contact.ts';
+import { identity, microcopy } from '../data/site.ts';
+
+const c = microcopy.contact;
+const f = microcopy.forms;
+const e = f.errors;
+const attrs = {
+  'data-summary-text': f.summary,
+  'data-summary-one-text': f.summaryOne,
+  'data-sending': f.sending,
+  'data-confirmation': identity.demo.contact,
+};
+---
+
+<Base title={c.title} description={c.description}>
+  <div class="page">
+    <Container grid>
+      <header class="head">
+        <h1>{c.title}</h1>
+        <p class="lead">{c.lead}</p>
+      </header>
+
+      <section class="details" aria-labelledby="details-title">
+        <h2 id="details-title">{c.details}</h2>
+        <BookLine
+          rows={[
+            { label: c.email, value: contact.email },
+            { label: c.phone, value: contact.phone },
+            { label: c.factory, value: contact.address },
+          ]}
+        />
+      </section>
+
+      <section class="send" aria-label={f.send}>
+        <form id="contact-form" data-demo-form novalidate {...attrs}>
+          <p class="summary" role="alert" data-form-summary></p>
+
+          <fieldset class="topic">
+            <legend>{c.topic}</legend>
+            {f.contactIntents.map((intent, i) => (
+              <label class="opt">
+                <input class="radio" type="radio" name="topic" value={intent} checked={i === 0} />
+                <span>{intent}</span>
+              </label>
+            ))}
+          </fieldset>
+
+          <Field
+            id="c-name"
+            name="name"
+            label={f.fields.name}
+            autocomplete="name"
+            data-msg-empty={e.name}
+          />
+          <Field
+            id="c-email"
+            name="email"
+            type="email"
+            label={f.fields.email}
+            autocomplete="email"
+            data-msg-empty={e.email}
+            data-msg-invalid={e.emailIncomplete}
+          />
+          <Field
+            id="c-message"
+            name="message"
+            type="textarea"
+            rows={7}
+            label={f.fields.message}
+            data-msg-empty={e.message}
+          />
+
+          <Button type="submit" data-form-submit disabled>
+            {f.send}
+          </Button>
+          <noscript>
+            <p class="note">{f.noscript}</p>
+          </noscript>
+        </form>
+
+        <div class="done" data-form-done="contact-form" role="status" tabindex="-1" hidden>
+          <p data-form-done-text></p>
+        </div>
+      </section>
+    </Container>
+  </div>
+</Base>
+
+<script>
+  import '../scripts/forms.ts';
+</script>
+
+<style>
+  .page {
+    padding-block: var(--space-48) var(--space-section);
+  }
+
+  .head,
+  .details,
+  .send {
+    grid-column: 1 / -1;
+    min-inline-size: 0;
+  }
+
+  .head {
+    display: grid;
+    gap: var(--space-16);
+    justify-items: start;
+    margin-block-end: var(--space-32);
+  }
+
+  .lead {
+    max-inline-size: 28ch;
+    font-family: var(--font-serif);
+    font-size: var(--fs-lead);
+    line-height: var(--lh-lead);
+    color: var(--text-2);
+  }
+
+  .details {
+    display: grid;
+    gap: var(--space-16);
+    align-content: start;
+    margin-block-end: var(--space-48);
+  }
+
+  .details h2 {
+    font-size: var(--fs-h3);
+    line-height: var(--lh-h3);
+  }
+
+  form {
+    display: grid;
+    gap: var(--space-24);
+    max-inline-size: 32rem;
+  }
+
+  /* The three intentions: native radios set as lines of the book, each a 48px target. */
+  .topic {
+    display: grid;
+    min-inline-size: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .topic legend {
+    margin-block-end: var(--space-8);
+    padding: 0;
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--text-2);
+  }
+
+  .opt {
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-12);
+    min-block-size: var(--target);
+    border-bottom: var(--line) solid var(--rule);
+    cursor: pointer;
+    font-size: var(--fs-ui);
+  }
+
+  .radio {
+    display: grid;
+    place-items: center;
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+    margin: 0;
+    border: var(--line) solid var(--border);
+    border-radius: 50%;
+    background: transparent;
+    appearance: none;
+    cursor: pointer;
+  }
+
+  /* Chosen: a filled circle, a darker rule and heavier words, never colour alone. */
+  .radio::after {
+    content: '';
+    inline-size: 0.625rem;
+    block-size: 0.625rem;
+    border-radius: 50%;
+    background: var(--text);
+    transform: scale(0);
+  }
+
+  .radio:checked {
+    border-color: var(--text);
+  }
+
+  .radio:checked::after {
+    transform: scale(1);
+  }
+
+  .opt:has(.radio:checked) {
+    font-weight: var(--fw-medium);
+    border-bottom-color: var(--text);
+  }
+
+  /* The ring is on the whole line, which is the target. */
+  .radio:focus-visible {
+    outline: none;
+  }
+
+  .opt:has(.radio:focus-visible) {
+    outline: var(--focus-width) solid var(--text);
+    outline-offset: -2px;
+  }
+
+  .summary {
+    font-size: var(--fs-ui);
+    color: var(--error);
+  }
+
+  .summary:empty {
+    display: none;
+  }
+
+  .note {
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--text-2);
+  }
+
+  .done {
+    max-inline-size: 32rem;
+    padding: var(--space-24);
+    border: var(--line) solid var(--border);
+    font-family: var(--font-serif);
+    font-size: var(--fs-h4);
+    line-height: var(--lh-h4);
+  }
+
+  .done[hidden] {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .radio::after {
+      transition: transform var(--dur-fast) var(--ease-out);
+    }
+  }
+
+  @media (min-width: 40rem) {
+    .head {
+      grid-column: 1 / span 6;
+    }
+
+    .details {
+      grid-column: 1 / span 4;
+      margin-block-end: 0;
+    }
+
+    .send {
+      grid-column: 5 / -1;
+      grid-row: 2;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .page {
+      padding-block: var(--space-96) var(--space-section);
+    }
+
+    .head {
+      grid-column: 1 / span 6;
+    }
+
+    .details {
+      grid-column: 1 / span 5;
+    }
+
+    .send {
+      grid-column: 7 / span 6;
+    }
+  }
+</style>

@@ -1,0 +1,26 @@
+---
+// The label role: Plex 500, 12px, capitals, 0.1em tracking. The only place capitals with
+// tracking are used (blueprint 5.2).
+interface Props {
+  as?: 'p' | 'span' | 'div' | 'dt';
+  class?: string;
+}
+
+const { as: Tag = 'p', class: className } = Astro.props;
+---
+
+<Tag class:list={['label', className]}>
+  <slot />
+</Tag>
+
+<style>
+  .label {
+    font-family: var(--font-sans);
+    font-size: var(--fs-label);
+    font-weight: var(--fw-medium);
+    line-height: var(--lh-label);
+    letter-spacing: var(--ls-label);
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+</style>

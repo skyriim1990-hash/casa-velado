@@ -1,0 +1,13 @@
+---
+// The terms page (blueprint 2.1): the shared legal template, with the text from src/data/legal.ts.
+import Base from '../layouts/Base.astro';
+import LegalPage from '../components/legal/LegalPage.astro';
+import { legalPages } from '../data/legal.ts';
+
+const page = legalPages.find((p) => p.id === 'terms');
+if (!page) throw new Error('Missing legal page: terms');
+---
+
+<Base title={page.title} description={page.description}>
+  <LegalPage page={page} />
+</Base>

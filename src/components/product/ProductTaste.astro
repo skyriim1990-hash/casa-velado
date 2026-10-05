@@ -1,0 +1,73 @@
+---
+// Tasting notes by thirds (blueprint 4.6): the element that belongs to the product page alone.
+// Three columns from 640px, three rows below. Each third has its numeral (I, II, III, in the
+// label type), its heading and up to three notes, written as lines of a log, not as tags.
+// The notes come from the cigar's record; nothing is added here.
+import Label from '../Label.astro';
+import { microcopy } from '../../data/site.ts';
+import type { CigarProduct } from '../../lib/schemas.ts';
+
+interface Props {
+  notes: CigarProduct['notes'];
+}
+
+const { notes } = Astro.props;
+const thirds = [notes.first, notes.second, notes.final];
+---
+
+<ol class="thirds">
+  {microcopy.product.thirds.map((third, i) => (
+    <li class="third">
+      <Label as="p" class="numeral">
+        {third.numeral}
+      </Label>
+      <h3>{third.title}</h3>
+      <ul class="notes">
+        {thirds[i]?.map((note) => (
+          <li>{note}</li>
+        ))}
+      </ul>
+    </li>
+  ))}
+</ol>
+
+<style>
+  .thirds {
+    display: grid;
+    gap: var(--space-32);
+    padding: 0;
+    list-style: none;
+  }
+
+  .third {
+    display: grid;
+    align-content: start;
+    gap: var(--space-8);
+    padding-block-start: var(--space-16);
+    border-top: var(--line) solid var(--rule);
+  }
+
+  h3 {
+    font-size: var(--fs-h3);
+    line-height: var(--lh-h3);
+    font-weight: var(--fw-regular);
+  }
+
+  .notes {
+    display: grid;
+    gap: var(--space-4);
+    margin-block-start: var(--space-8);
+    padding: 0;
+    list-style: none;
+    font-size: var(--fs-ui);
+    line-height: var(--lh-ui);
+    color: var(--text-2);
+  }
+
+  @media (min-width: 40rem) {
+    .thirds {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--gutter);
+    }
+  }
+</style>

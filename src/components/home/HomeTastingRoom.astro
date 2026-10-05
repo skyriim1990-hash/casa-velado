@@ -1,0 +1,99 @@
+---
+// R7, the Tasting Room (blueprint 3): the house has a physical place. From 1024px the photograph
+// is across the whole page, 70svh tall, and the text is in a solid dark block (--surface, no
+// transparency, no glass) over its lower right edge, in columns 8–12. Below 1024px the photograph is
+// 4:3 (4:5 on a phone) and the block is under it, with no overlap. Nothing about the place
+// is invented: the city, the address and the hours stay as placeholders until the owner gives them.
+import Button from '../Button.astro';
+import Container from '../Container.astro';
+import Label from '../Label.astro';
+import Photo from '../Photo.astro';
+import { microcopy } from '../../data/site.ts';
+import { fill } from '../../lib/format.ts';
+import type { Photo as PhotoRecord } from '../../lib/schemas.ts';
+
+interface Props {
+  photo: PhotoRecord;
+}
+
+const { photo } = Astro.props;
+const c = microcopy.home.tastingRoom;
+const room = microcopy.tastingRoom;
+const sentences = [
+  c.lines[0],
+  fill(c.lines[1], { address: room.addressValue, hours: room.hoursValue }),
+];
+---
+
+<section class="room" aria-labelledby="room-title">
+  <div class="media" data-reveal>
+    <Photo
+      image={photo.image}
+      kind="editorial"
+      sizes="100vw"
+      alt={photo.image.kind === 'placeholder' ? photo.image.description : ''}
+    />
+  </div>
+
+  <Container grid>
+    <div class="block">
+      <Label>{fill(c.label, { city: room.city })}</Label>
+      <h2 id="room-title">{c.title}</h2>
+      {sentences.map((sentence) => (
+        <p class="line">{sentence}</p>
+      ))}
+      <Button href="/tasting-room#reserve">{c.cta}</Button>
+    </div>
+  </Container>
+</section>
+
+<style>
+  .room {
+    padding-block-end: var(--space-section);
+  }
+
+  .block {
+    grid-column: 1 / -1;
+    display: grid;
+    gap: var(--space-16);
+    justify-items: start;
+    padding-block-start: var(--space-32);
+  }
+
+  h2 {
+    font-size: var(--fs-h3);
+    line-height: var(--lh-h3);
+  }
+
+  .line {
+    color: var(--text-2);
+  }
+
+  @media (min-width: 40rem) {
+    .block {
+      max-inline-size: 36rem;
+    }
+  }
+
+  /* From 1024px the photograph is 70svh and the block, solid, lies over its lower right. */
+  @media (min-width: 64rem) {
+    .media :global(.photo) {
+      aspect-ratio: auto;
+      block-size: max(70svh, 28rem);
+    }
+
+    .block {
+      grid-column: 8 / -1;
+      max-inline-size: none;
+      margin-block-start: calc(-1 * var(--space-96));
+      padding: var(--space-48);
+      background: var(--surface);
+      position: relative;
+    }
+
+    .media :global(.placeholder) {
+      align-items: flex-start;
+      padding-block-start: var(--space-24);
+    }
+  }
+</style>

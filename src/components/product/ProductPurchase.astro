@@ -1,0 +1,407 @@
+---
+// The purchase block (blueprint 4.6). From 1024px it is the sticky column on the right; from
+// 640px it is two columns under the gallery (the cigar, then what to choose); below 640px one
+// column. In order: the line (a link back to it), the name as the page's H1, two or three
+// sentences, the data line, the format as book-line radios, the quantity, the stock, the
+// button and the delivery sentence.
+//
+// The price in the button is the chosen option times the quantity. Everything it needs is
+// in the page already; src/scripts/product.ts only keeps the button, the limit and the number
+// in step. Without JavaScript the block is the cigar, the formats and the prices, with the
+// words “Please enable JavaScript to use the cart.”; the button needs the script and is not shown.
+//
+// Sold out: the formats and prices stay, the stepper and “Add to cart” give way to “Notify me
+// when it returns”, which opens an email field in place (no dialog) and confirms as a
+// demonstration. There is no fake urgency anywhere: no counts, no timers.
+import Button from '../Button.astro';
+import Field from '../Field.astro';
+import Label from '../Label.astro';
+import QuantityStepper from '../QuantityStepper.astro';
+import Strength from '../Strength.astro';
+import { identity, microcopy } from '../../data/site.ts';
+import { optionLimit } from '../../lib/cart.ts';
+import { fill, formatPrice, formatSize, formatTime, optionLabel } from '../../lib/format.ts';
+import type { Line, Product } from '../../lib/schemas.ts';
+
+interface Props {
+  product: Product;
+  line: Line;
+  name: string;
+}
+
+const { product, line, name } = Astro.props;
+const p = microcopy.product;
+
+const lineHref = `/cigars#${line.id}`;
+const options = product.options.map((o) => ({
+  type: o.type,
+  label: optionLabel(o, product, line.kind === 'edition'),
+  price: formatPrice(o.priceCents),
+  max: optionLimit(o.type, product),
+}));
+const first = options[0];
+if (!first) throw new Error(`Product “${product.id}” has no option`);
+
+const soldOut = product.availability === 'sold_out';
+const stock = soldOut
+  ? (product.restockNote ?? microcopy.availability.sold_out)
+  : microcopy.availability[product.availability];
+const boxCap = product.options.some((o) => o.type === 'box') ? product.maxPerOrder : undefined;
+---
+
+<div class="buy" data-product data-product-id={product.id} data-sold-out={soldOut ? '' : undefined}>
+  <div class="identity">
+    {product.kind === 'cigar' && (
+      <Label class="line-label">
+        <a href={lineHref}>{line.name}</a>
+      </Label>
+    )}
+    <h1>{name}</h1>
+    <p class="desc">{product.description}</p>
+    {product.kind === 'cigar' && line.kind !== 'sampler' && (
+      <ul class="data">
+        <li>
+          <span aria-hidden="true">{p.strength}:</span>
+          <Strength value={line.strength} />
+        </li>
+        <li>{formatSize(product)}</li>
+        <li>{formatTime(product.smokingMinutes)}</li>
+      </ul>
+    )}
+  </div>
+
+  <form class="form" data-purchase novalidate>
+    <fieldset class="options">
+      <legend class="visually-hidden">{p.format}</legend>
+      {options.map((o, i) => (
+        <label class="opt">
+          <input class="radio" type="radio" name="option" value={o.type} checked={i === 0} />
+          <span class="name">{o.label}</span>
+          <span class="price">{o.price}</span>
+        </label>
+      ))}
+    </fieldset>
+
+    {!soldOut && (
+      <div class="qty-row">
+        <div class="qty-text">
+          <label for="qty">{p.quantity}</label>
+          <p class="hint" id="qty-hint" data-limit>
+            {fill(p.atMost, { n: first.max })}
+          </p>
+        </div>
+        <QuantityStepper
+          id="qty"
+          label={p.quantity}
+          decreaseLabel={microcopy.cartDrawer.decrease}
+          increaseLabel={microcopy.cartDrawer.increase}
+          max={first.max}
+          describedby="qty-hint"
+        />
+      </div>
+    )}
+
+    <p class="stock" data-stock>
+      <span class:list={['dot', { 'dot--out': soldOut }]} aria-hidden="true"></span>
+      <span>{stock}</span>
+    </p>
+    {boxCap !== undefined && <p class="note">{fill(microcopy.limitedPerOrder, { n: boxCap })}</p>}
+
+    {soldOut ? (
+      <div
+        class="notify"
+        data-notify
+        data-err-empty={microcopy.forms.errors.email}
+        data-err-incomplete={microcopy.forms.errors.emailIncomplete}
+        data-confirmation={identity.demo.notify}
+      >
+        <Button
+          type="button"
+          class="act"
+          data-notify-open
+          aria-expanded="false"
+          aria-controls="notify-panel"
+        >
+          {microcopy.notifyMe}
+        </Button>
+        <div class="notify-panel" id="notify-panel" data-notify-panel hidden>
+          <Field
+            id="notify-email"
+            name="email"
+            type="email"
+            label={p.notifyEmail}
+            autocomplete="email"
+            data-notify-email
+          />
+          <Button type="submit" variant="secondary" class="act" data-notify-send>
+            {p.notifySend}
+          </Button>
+        </div>
+        <p class="note" role="status" data-notify-status />
+      </div>
+    ) : (
+      <Button type="submit" class="act" data-add>
+        <span data-add-label>{fill(microcopy.addToCart, { price: first.price })}</span>
+      </Button>
+    )}
+
+    <noscript>
+      <p class="note">{microcopy.noscriptCart}</p>
+    </noscript>
+    <p class="delivery">{microcopy.delivery}</p>
+  </form>
+</div>
+
+<style>
+  .buy {
+    display: grid;
+    gap: var(--space-32);
+    min-inline-size: 0;
+  }
+
+  .identity {
+    display: grid;
+    gap: var(--space-16);
+    justify-items: start;
+    align-content: start;
+  }
+
+  /* The line's link is a 48px target; the negative margin keeps the space it had. */
+  .identity :global(.line-label) a {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--target);
+    margin-block: calc((var(--lh-label) * var(--fs-label) - var(--target)) / 2);
+  }
+
+  /* The H1 is the product's name; it is not the display size, which the site uses once. */
+  h1 {
+    font-size: var(--fs-h2);
+    line-height: var(--lh-h2);
+  }
+
+  .desc {
+    max-inline-size: 46ch;
+    font-size: var(--fs-ui);
+    line-height: var(--lh-ui);
+    color: var(--text-2);
+  }
+
+  /* Strength: Medium ▮▮▮▯▯, then 5 × 50 (127 mm) · ~55 min on the line below it. */
+  .data {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4) var(--space-12);
+    padding: 0;
+    list-style: none;
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .data li {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-8);
+  }
+
+  .data li:first-child {
+    flex-basis: 100%;
+  }
+
+  .data li:last-child::before {
+    content: '·' / '';
+    margin-inline-end: var(--space-4);
+    color: var(--text-3);
+  }
+
+  .form {
+    display: grid;
+    gap: var(--space-16);
+    align-content: start;
+  }
+
+  /* ── The formats: radios set as book lines (label left, price right, a rule below) ── */
+  .options {
+    display: grid;
+    min-inline-size: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .opt {
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-12);
+    min-block-size: var(--target);
+    padding-block: var(--space-4);
+    border-bottom: var(--line) solid var(--rule);
+    cursor: pointer;
+    font-size: var(--fs-ui);
+  }
+
+  .radio {
+    display: grid;
+    place-items: center;
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+    margin: 0;
+    border: var(--line) solid var(--border);
+    border-radius: 50%;
+    background: transparent;
+    appearance: none;
+    cursor: pointer;
+  }
+
+  /* Chosen: the circle is filled, the rule under the line is darker and the words are heavier,
+     so it is never told by colour alone. */
+  .radio::after {
+    content: '';
+    inline-size: 0.625rem;
+    block-size: 0.625rem;
+    border-radius: 50%;
+    background: var(--text);
+    transform: scale(0);
+  }
+
+  .radio:checked {
+    border-color: var(--text);
+  }
+
+  .radio:checked::after {
+    transform: scale(1);
+  }
+
+  .opt:has(.radio:checked) {
+    font-weight: var(--fw-medium);
+    border-bottom-color: var(--text);
+  }
+
+  /* The ring is on the whole line, which is the target. */
+  .radio:focus-visible {
+    outline: none;
+  }
+
+  .opt:has(.radio:focus-visible) {
+    outline: var(--focus-width) solid var(--text);
+    outline-offset: -2px;
+  }
+
+  .price {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Quantity ── */
+  .qty-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-16);
+  }
+
+  .qty-text {
+    display: grid;
+    gap: var(--space-4);
+    font-size: var(--fs-ui);
+  }
+
+  .hint {
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--text-3);
+  }
+
+  /* ── Stock: a small circle and the words ── */
+  .stock {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+  }
+
+  .dot {
+    flex: none;
+    box-sizing: border-box;
+    inline-size: 0.5rem;
+    block-size: 0.5rem;
+    border-radius: 50%;
+    background: var(--text-2);
+  }
+
+  /* Out of stock: an empty circle. The words say it as well. */
+  .dot--out {
+    background: transparent;
+    border: var(--line) solid var(--text-2);
+  }
+
+  .note,
+  .delivery {
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--text-2);
+  }
+
+  .delivery {
+    color: var(--text-3);
+  }
+
+  .form :global(.act) {
+    inline-size: 100%;
+  }
+
+  /* The button needs the script. Without it the words under the form say so. */
+  :global(html:not(.js)) [data-add] {
+    display: none;
+  }
+
+  /* ── Notify me when it returns ── */
+  .notify {
+    display: grid;
+    gap: var(--space-16);
+  }
+
+  .notify-panel {
+    display: grid;
+    gap: var(--space-16);
+  }
+
+  .visually-hidden {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* ── 640–1023px: what to choose on the left, the cigar on the right ──
+     Placed by grid column and row; the order in the HTML (the cigar, then the form) is the
+     reading order on a phone and on a desktop and does not change. */
+  @media (min-width: 40rem) and (max-width: 63.9375rem) {
+    .buy {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: var(--gutter);
+      align-items: start;
+    }
+
+    .form {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .identity {
+      grid-column: 2;
+      grid-row: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .radio::after {
+      transition: transform var(--dur-fast) var(--ease-out);
+    }
+  }
+</style>

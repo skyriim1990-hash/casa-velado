@@ -1,0 +1,90 @@
+---
+// The book line (blueprint 5.4): rows with a label on the left, a value on the right and a 1px
+// rule beneath, set as a description list. Rows are 44–48px, the label Plex 14px in --text-3
+// (--ink-2 on paper), the value Plex 15px with tabular figures.
+//
+// It is the signature of the site and is used only where there is real data to set in rows:
+// the ledger, the cart totals, the checkout summary. Never as a divider or an ornament.
+//
+// On a phone, a value longer than 24 characters puts the label above it. That is counted here,
+// on the text, because CSS cannot count; the layout is done by CSS below 640px.
+import Strength from './Strength.astro';
+import type { Strength as StrengthValue } from '../data/taxonomy.ts';
+
+interface Row {
+  label: string;
+  /** Plain text. Set `html` for markup such as <i lang="es">. */
+  value?: string;
+  /** A strength value (1–5): the value is the strength indicator, not text. */
+  strength?: StrengthValue;
+  html?: boolean;
+  /** Attributes for the value, e.g. a script hook such as data-cart-subtotal. */
+  attrs?: Record<string, string>;
+}
+
+interface Props {
+  rows: Row[];
+  class?: string;
+}
+
+const { rows, class: className } = Astro.props;
+const LONG = 24;
+const isLong = (row: Row) => (row.value ?? '').replace(/<[^>]+>/g, '').length > LONG;
+---
+
+<dl class:list={['book-line', className]}>
+  {rows.map((row) => (
+    <div class="row" data-long={isLong(row) ? '' : undefined}>
+      <dt>{row.label}</dt>
+      {row.strength ? (
+        <dd {...row.attrs}>
+          <Strength value={row.strength} />
+        </dd>
+      ) : row.html ? (
+        <dd set:html={row.value ?? ''} {...row.attrs} />
+      ) : (
+        <dd {...row.attrs}>{row.value}</dd>
+      )}
+    </div>
+  ))}
+</dl>
+
+<style>
+  .row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-16);
+    min-block-size: 2.75rem;
+    padding-block: var(--space-12);
+    border-bottom: var(--line) solid var(--rule);
+  }
+
+  dt {
+    flex: none;
+    font-size: var(--fs-small);
+    line-height: var(--lh-small);
+    color: var(--text-3);
+  }
+
+  dd {
+    margin: 0;
+    font-size: var(--fs-button);
+    line-height: var(--lh-small);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 639px) {
+    .row[data-long] {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-4);
+    }
+
+    .row[data-long] dd {
+      text-align: left;
+    }
+  }
+</style>
