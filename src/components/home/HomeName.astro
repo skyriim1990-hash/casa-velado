@@ -36,7 +36,7 @@ const c = microcopy.home.name;
         image={photo.image}
         ratio="4:5"
         kind="editorial"
-        sizes="(min-width: 1024px) 33vw, (min-width: 640px) 70vw, 100vw"
+        sizes="(min-width: 1024px) 42vw, (min-width: 640px) 70vw, 100vw"
         alt={photo.image.kind === 'placeholder' ? photo.image.description : ''}
       />
     </div>
@@ -87,27 +87,28 @@ const c = microcopy.home.name;
   }
 
   @media (min-width: 64rem) {
-    .name {
-      min-block-size: 70svh;
-    }
-
     .label {
       grid-column: 1 / span 2;
       grid-row: 1;
+      align-self: center;
     }
 
     .text {
       grid-column: 3 / span 5;
       grid-row: 1;
+      align-self: center;
     }
 
-    /* About 120px lower than the text. */
+    /* Five columns, level with the text's block, so the section has no empty corner. */
     .picture {
-      grid-column: 9 / span 4;
+      grid-column: 8 / span 5;
       grid-row: 1;
       inline-size: auto;
       justify-self: stretch;
-      margin-block-start: 7.5rem;
+    }
+
+    .picture :global(.photo) {
+      max-block-size: 85svh;
     }
   }
 </style>
