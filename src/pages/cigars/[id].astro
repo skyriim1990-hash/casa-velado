@@ -61,7 +61,7 @@ const images = cigar
       ...(cigar.images.context ? [cigar.images.context] : []),
     ]
   : product.kind === 'sampler'
-    ? [product.images.catalog, product.images.box]
+    ? [product.images.catalog] // the same photograph serves both frames, so it is shown once
     : [];
 
 const first = product.options[0];

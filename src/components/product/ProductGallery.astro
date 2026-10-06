@@ -23,22 +23,24 @@ const p = microcopy.product;
 const total = images.length;
 ---
 
-<div class="gallery" data-gallery>
-  <ul class="thumbs" data-thumbs>
-    {images.map((image, i) => (
-      <li>
-        <button
-          class="thumb"
-          type="button"
-          data-thumb={i}
-          aria-label={fill(p.photoOf, { n: i + 1, total })}
-          aria-current={i === 0 ? 'true' : undefined}
-        >
-          <Photo {image} ratio="1:1" alt="" kind="cartThumb" sizes="72px" />
-        </button>
-      </li>
-    ))}
-  </ul>
+<div class="gallery" data-gallery data-single={total === 1 ? '' : undefined}>
+  {total > 1 && (
+    <ul class="thumbs" data-thumbs>
+      {images.map((image, i) => (
+        <li>
+          <button
+            class="thumb"
+            type="button"
+            data-thumb={i}
+            aria-label={fill(p.photoOf, { n: i + 1, total })}
+            aria-current={i === 0 ? 'true' : undefined}
+          >
+            <Photo {image} ratio="1:1" alt="" kind="cartThumb" sizes="72px" />
+          </button>
+        </li>
+      ))}
+    </ul>
+  )}
 
   <div class="stage">
     <!-- A strip that scrolls is a region of its own: it takes the keyboard (arrow keys) and has a name. -->
@@ -61,9 +63,11 @@ const total = images.length;
         </figure>
       ))}
     </div>
-    <p class="counter" data-counter aria-hidden="true">
-      {fill(p.counter, { n: 1, total })}
-    </p>
+    {total > 1 && (
+      <p class="counter" data-counter aria-hidden="true">
+        {fill(p.counter, { n: 1, total })}
+      </p>
+    )}
   </div>
 </div>
 
@@ -122,6 +126,11 @@ const total = images.length;
       grid-template-columns: 4.5rem minmax(0, 1fr);
       gap: var(--space-16);
       align-items: start;
+    }
+
+    /* One picture alone: no column for thumbnails. */
+    :global(html.js) .gallery[data-single] {
+      grid-template-columns: minmax(0, 1fr);
     }
 
     :global(html.js) .thumbs {
