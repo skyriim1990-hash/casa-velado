@@ -39,12 +39,14 @@ const c = microcopy.home.hero;
       <div class="copy">
         <Label>{c.label}</Label>
         <h1 id="hero-title">{c.title}</h1>
-        <p class="subtitle">{c.subtitle}</p>
-        <div class="actions">
-          <Button href="/cigars">{c.cta}</Button>
-          <TextLink href="/tobacco" arrow>
-            {c.link}
-          </TextLink>
+        <div class="side">
+          <p class="subtitle">{c.subtitle}</p>
+          <div class="actions">
+            <Button href="/cigars">{c.cta}</Button>
+            <TextLink href="/tobacco" arrow>
+              {c.link}
+            </TextLink>
+          </div>
         </div>
       </div>
     </Container>
@@ -106,9 +108,35 @@ const c = microcopy.home.hero;
     }
   }
 
+  /* The sentence and the buttons: under the heading on a phone, one block. */
+  .side {
+    display: grid;
+    gap: var(--space-16);
+    justify-items: start;
+  }
+
+  /* From 1024px the heading is at the left and the sentence with the buttons at the right, level
+     with the heading's last line, so the buttons are in the first screen. */
   @media (min-width: 64rem) {
     .copy {
+      grid-column: 1 / -1;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      column-gap: var(--gutter);
       padding-block: var(--space-48);
+    }
+
+    .copy > :global(.label) {
+      grid-column: 1 / -1;
+    }
+
+    h1 {
+      grid-column: 1 / span 6;
+    }
+
+    .side {
+      grid-column: 8 / -1;
+      grid-row: 2;
+      align-self: end;
     }
   }
 

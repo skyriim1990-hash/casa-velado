@@ -42,7 +42,7 @@ export const photos: PhotoInput[] = [
       kind: 'asset',
       src: 'tobacco/the-name-production-master-2560w',
       alt: 'A worker’s weathered hands smoothing a bundle of dried tobacco leaves on a worn wooden beam, with leaves hanging in the barn behind',
-      ratios: ['4:5'],
+      ratios: ['3:2', '4:5', '4:5'],
     },
     usedIn: ['Home R2', 'Our House'],
   },
