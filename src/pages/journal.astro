@@ -55,7 +55,13 @@ const copy = JSON.stringify({ shown: c.shown, shownOne: c.shownOne });
         <ul class="list" data-list>
           {lead && (
             <li data-entry data-category={slug(lead.data.category)}>
-              <ArticleCard id={lead.id} article={lead.data} variant="large" headingLevel={2} />
+              <ArticleCard
+                id={lead.id}
+                article={lead.data}
+                variant="large"
+                ratio="4:3"
+                headingLevel={2}
+              />
             </li>
           )}
           {rest.map((entry) => (

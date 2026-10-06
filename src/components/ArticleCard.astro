@@ -12,13 +12,15 @@
 import Label from './Label.astro';
 import Photo from './Photo.astro';
 import { formatDate } from '../lib/format.ts';
-import type { Article } from '../lib/schemas.ts';
+import type { Article, Ratio } from '../lib/schemas.ts';
 
 interface Props {
   /** The entry's slug, for the link. */
   id: string;
   article: Article;
   variant?: 'large' | 'small';
+  /** The picture's ratio, where a page wants another than the variant's own (large 4:5, small 3:2). */
+  ratio?: Ratio;
   /** Overrides the entry's excerpt. Only for a specimen. */
   excerpt?: string;
   headingLevel?: 2 | 3 | 4;
@@ -30,6 +32,7 @@ const {
   id,
   article,
   variant = 'small',
+  ratio: ratioProp,
   excerpt,
   headingLevel = 3,
   class: className,
@@ -37,7 +40,7 @@ const {
 } = Astro.props;
 
 const Heading = `h${headingLevel}` as 'h3';
-const ratio = variant === 'large' ? '4:5' : '3:2';
+const ratio = ratioProp ?? (variant === 'large' ? '4:5' : '3:2');
 const text = variant === 'large' ? (excerpt ?? article.excerpt) : null;
 ---
 
