@@ -141,6 +141,7 @@ const base = built[built.length - 1];
 <div
   class:list={['photo', className]}
   data-surface="dark"
+  data-kind={kind}
   style={style}
   role={image.kind === 'placeholder' && !decorative ? 'img' : undefined}
   aria-label={image.kind === 'placeholder' && !decorative ? altText : undefined}
@@ -180,8 +181,13 @@ const base = built[built.length - 1];
     inline-size: 100%;
     overflow: hidden;
     background: var(--surface-2);
-    border-radius: 0;
+    border-radius: var(--radius-photo);
     aspect-ratio: var(--r-tall, var(--r));
+  }
+
+  /* The hero runs across the whole page, so it keeps square edges. */
+  .photo[data-kind='hero'] {
+    border-radius: 0;
   }
 
   @media (min-width: 40rem) {

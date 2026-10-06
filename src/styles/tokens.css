@@ -154,7 +154,8 @@ body,
 
 /* ── Shape, line, focus ─────────────────────────────────────────────── */
 :root {
-  --radius-check: 2px; /* the only rounded corner on the site */
+  --radius-check: 2px; /* the checkbox */
+  --radius-photo: 0.75rem; /* the photographs; the full-width hero stays square */
   --line: 1px;
   --focus-width: 2px;
   --focus-offset: 3px;

@@ -116,4 +116,11 @@ const c = microcopy.home.name;
       max-block-size: 85svh;
     }
   }
+
+  /* On a phone the picture runs from edge to edge, so it keeps square corners. */
+  @media (max-width: 39.99rem) {
+    .picture :global(.photo) {
+      border-radius: 0;
+    }
+  }
 </style>

@@ -191,4 +191,11 @@ const total = images.length;
       transition-duration: var(--dur-reduced);
     }
   }
+
+  /* On a phone the gallery runs from edge to edge, so it keeps square corners. */
+  @media (max-width: 39.99rem) {
+    :global(.photo[data-kind='productGallery']) {
+      border-radius: 0;
+    }
+  }
 </style>
