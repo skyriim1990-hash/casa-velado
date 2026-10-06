@@ -11,6 +11,8 @@ import CartDrawer from '../components/shell/CartDrawer.astro';
 import Footer from '../components/shell/Footer.astro';
 import AgeGate from '../components/shell/AgeGate.astro';
 import CookieBanner from '../components/shell/CookieBanner.astro';
+import { getImage } from 'astro:assets';
+import shareImage from '../assets/images/home/hero-galera-wide.png';
 import serifRoman from '../assets/fonts/casa-serif-roman.woff2?url';
 import sansRegular from '../assets/fonts/casa-sans-400.woff2?url';
 import { OG_LOCALE, SITE_NAME, absoluteUrl, assertDescription, pageTitle } from '../lib/site';
@@ -28,7 +30,26 @@ interface Props {
   headerOverlay?: boolean;
 }
 
-const { title, description, ogImage, noindex = false, headerOverlay = false } = Astro.props;
+const {
+  title,
+  description,
+  ogImage: ogImageProp,
+  noindex = false,
+  headerOverlay = false,
+} = Astro.props;
+
+// The picture shown when a link is shared: the curing barn, cut to 1200×630, as a WebP.
+// A page can pass its own `ogImage`.
+const shared = await getImage({
+  src: shareImage,
+  width: 1200,
+  height: 630,
+  format: 'webp',
+  quality: 80,
+  fit: 'cover',
+  position: 'center',
+});
+const ogImage = ogImageProp ?? shared.src;
 
 const fullTitle = pageTitle(title);
 assertDescription(description);
