@@ -110,8 +110,8 @@ body,
   --space-128: 8rem;
   --space-160: 10rem;
 
-  /* 72px on a phone, 160px from 1600px wide */
-  --space-section: clamp(4.5rem, 10vw, 10rem);
+  /* 56px on a phone, 104px from 1600px wide */
+  --space-section: clamp(3.5rem, 6.5vw, 6.5rem);
 }
 
 /* ── Layout (blueprint 5.3) ─────────────────────────────────────────── */

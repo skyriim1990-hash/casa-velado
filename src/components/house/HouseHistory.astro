@@ -48,7 +48,7 @@ const { chapters } = Astro.props;
 
 <style>
   .chapter {
-    padding-block: var(--space-48);
+    padding-block: clamp(2.5rem, 5vw, 4.5rem);
   }
 
   h2,
@@ -85,7 +85,7 @@ const { chapters } = Astro.props;
 
   @media (min-width: 40rem) {
     .chapter {
-      padding-block: var(--space-64);
+      padding-block: clamp(2.5rem, 5vw, 4.5rem);
     }
 
     h2 {
@@ -104,7 +104,7 @@ const { chapters } = Astro.props;
   /* From 1024px, five different placements on the 12 columns. */
   @media (min-width: 64rem) {
     .chapter {
-      padding-block: var(--space-96);
+      padding-block: clamp(2.5rem, 5vw, 4.5rem);
     }
 
     /* 01 The beginning: the number, the heading and text, the facts at the right. */

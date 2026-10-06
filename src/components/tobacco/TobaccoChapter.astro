@@ -47,7 +47,7 @@ const { id, title, paragraphs, facts, image, side } = Astro.props;
 
 <style>
   .chapter {
-    padding-block: var(--space-48);
+    padding-block: clamp(2.5rem, 5vw, 4.5rem);
     scroll-margin-block-start: var(--header-h);
   }
 
@@ -82,7 +82,7 @@ const { id, title, paragraphs, facts, image, side } = Astro.props;
 
   @media (min-width: 40rem) {
     .chapter {
-      padding-block: var(--space-64);
+      padding-block: clamp(2.5rem, 5vw, 4.5rem);
     }
 
     .text {
@@ -93,7 +93,7 @@ const { id, title, paragraphs, facts, image, side } = Astro.props;
   /* From 1024px: two columns, and the sides alternate down the page. */
   @media (min-width: 64rem) {
     .chapter {
-      padding-block: var(--space-96);
+      padding-block: clamp(2.5rem, 5vw, 4.5rem);
     }
 
     .media {
