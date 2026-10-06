@@ -61,12 +61,23 @@ const facts: Record<string, { label: string; value: string }[]> = {
   ],
 };
 
-const chapters = house.chapters.map((chapter) => ({
-  id: chapter.id,
-  title: chapter.title,
-  paragraphs: chapter.paragraphs,
-  facts: facts[chapter.id],
-}));
+// Two chapters carry a photograph the house already has: the first cigars and today.
+const chapterPhotos: Record<string, string> = {
+  'the-first-cigars': 'roller-table',
+  today: 'ageing',
+};
+const chapters = await Promise.all(
+  house.chapters.map(async (chapter) => {
+    const photoId = chapterPhotos[chapter.id];
+    return {
+      id: chapter.id,
+      title: chapter.title,
+      paragraphs: chapter.paragraphs,
+      facts: facts[chapter.id],
+      image: photoId ? (await getPhoto(photoId)).image : undefined,
+    };
+  }),
+);
 
 // The places: the regions the house names, with the lines whose blend has leaf from each.
 const leafRegions = (line: (typeof blended)[number]) =>
